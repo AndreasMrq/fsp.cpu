@@ -1,0 +1,11 @@
+{
+    "options": {
+        "ghdl_analysis": [
+            "--workdir=work",
+	    "--std=08",
+	    "-Pvunit_out/ghdl/libraries/vunit_lib/"
+        ]
+    },
+    "files": [
+    ]
+}
