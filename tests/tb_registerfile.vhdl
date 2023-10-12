@@ -1,8 +1,13 @@
 library vunit_lib;
-library IEEE;
+library ieee;
+use vunit_lib.log_levels_pkg.all;
+use vunit_lib.logger_pkg.all;
+use vunit_lib.run_pkg.all;
+
+use std.textio.all;
 context vunit_lib.vunit_context;
-use IEEE.NUMERIC_STD.ALL;
-use IEEE.std_logic_1164.All;
+use ieee.numeric_std.all;
+use ieee.std_logic_1164.all;
 
 entity tb_registerfile is
   generic (runner_cfg : string := runner_cfg_default);
@@ -56,55 +61,53 @@ begin
 
 			if run("Registers are initialized to 0x0") then
 				i_enable <= '1';
-				i_selecta <= "000001";
-				wait for i_clk_period;
-				check_equal(unsigned(o_dataa),0);
-			elsif run("Read Write test select A") then
+				for i in 0 to 31 loop
+					i_selecta <= std_logic_vector(to_unsigned(i, i_selecta'length));
+					wait for i_clk_period;
+					check_equal(unsigned(o_dataa),0);
+				end loop;
+			elsif run("Read Write on same cycle") then
 				i_enable <= '1';
-
 				i_selectdest <= "000001";
 				i_datadest <= x"aaaaaaaa";
-				i_write_enable<='1';
+				i_write_enable <= '1';
 				wait for i_clk_period;
-
-				i_selectdest <= "000000";
-				i_datadest <= (others => '0');
-				i_write_enable<='0';
+				i_datadest <= x"bbbbbbbb";
 				i_selecta <= "000001";
 				wait for i_clk_period;
-
 				check_equal(to_string(o_dataa),x"aaaaaaaa");
 			elsif run("Read Write test select A") then
 				i_enable <= '1';
-
-				i_selectdest <= "000001";
-				i_datadest <= x"aaaaaaaa";
 				i_write_enable<='1';
-				wait for i_clk_period;
 
-				i_selectdest <= "000000";
-				i_datadest <= (others => '0');
-				i_write_enable<='0';
-				i_selecta <= "000001";
-				wait for i_clk_period;
+				for i in 1 to 31 loop
+					i_selectdest <= std_logic_vector(to_unsigned(i, i_selectdest'length));
+					info("dest:" & to_string(i_selectdest));
+					i_datadest <= x"aaaaaaaa";
+					wait for i_clk_period;
 
-				check_equal(to_string(o_dataa),x"aaaaaaaa");
-			elsif run("Sequential Read Write test select B") then
+					i_selecta <= std_logic_vector(to_unsigned(i, i_selecta'length));
+					wait for i_clk_period;
+
+					check_equal(to_string(o_dataa),x"aaaaaaaa");
+					wait for i_clk_period;
+				end loop;
+			elsif run("Read Write test select B") then
 				i_enable <= '1';
-
-				i_selectdest <= "000001";
-				i_datadest <= x"aaaaaaaa";
 				i_write_enable<='1';
-				wait for i_clk_period;
 
-				i_selectdest <= "000000";
-				i_datadest <= (others => '0');
-				i_write_enable<='0';
-				i_selectb <= "000001";
-				wait for i_clk_period;
+				for i in 1 to 31 loop
+					i_selectdest <= std_logic_vector(to_unsigned(i, i_selectdest'length));
+					info("dest:" & to_string(i_selectdest));
+					i_datadest <= x"aaaaaaaa";
+					wait for i_clk_period;
 
-				check_equal(to_string(o_datab),x"aaaaaaaa");
+					i_selectb <= std_logic_vector(to_unsigned(i, i_selectb'length));
+					wait for i_clk_period;
 
+					check_equal(to_string(o_datab),x"aaaaaaaa");
+					wait for i_clk_period;
+				end loop;
 			elsif run("Both selects for same register") then
 				i_enable <= '1';
 
@@ -125,6 +128,10 @@ begin
 				i_datadest <= x"aaaaaaaa";
 				i_write_enable<='1';
 				i_selecta <= "000001";
+				wait for i_clk_period;
+				i_enable <= '1';
+				i_selectdest <= "000000";
+				i_write_enable<='1';
 				wait for i_clk_period;
 
 				check_equal(to_string(o_dataa),x"00000000");
