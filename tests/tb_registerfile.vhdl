@@ -59,7 +59,7 @@ begin
 				i_selecta <= "000001";
 				wait for i_clk_period;
 				check_equal(unsigned(o_dataa),0);
-			elsif run("Read Write test") then
+			elsif run("Read Write test select A") then
 				i_enable <= '1';
 
 				i_selectdest <= "000001";
@@ -74,7 +74,61 @@ begin
 				wait for i_clk_period;
 
 				check_equal(to_string(o_dataa),x"aaaaaaaa");
-			elsif run("No Write for when wirte_enable not asserted") then
+			elsif run("Read Write test select A") then
+				i_enable <= '1';
+
+				i_selectdest <= "000001";
+				i_datadest <= x"aaaaaaaa";
+				i_write_enable<='1';
+				wait for i_clk_period;
+
+				i_selectdest <= "000000";
+				i_datadest <= (others => '0');
+				i_write_enable<='0';
+				i_selecta <= "000001";
+				wait for i_clk_period;
+
+				check_equal(to_string(o_dataa),x"aaaaaaaa");
+			elsif run("Sequential Read Write test select B") then
+				i_enable <= '1';
+
+				i_selectdest <= "000001";
+				i_datadest <= x"aaaaaaaa";
+				i_write_enable<='1';
+				wait for i_clk_period;
+
+				i_selectdest <= "000000";
+				i_datadest <= (others => '0');
+				i_write_enable<='0';
+				i_selectb <= "000001";
+				wait for i_clk_period;
+
+				check_equal(to_string(o_datab),x"aaaaaaaa");
+
+			elsif run("Both selects for same register") then
+				i_enable <= '1';
+
+				i_selectdest <= "000001";
+				i_datadest <= x"aaaaaaaa";
+				i_write_enable<='1';
+				wait for i_clk_period;
+
+				i_selecta <= "000001";
+				i_selectb <= "000001";
+				wait for i_clk_period;
+
+				check_equal(to_string(o_dataa),x"aaaaaaaa");
+				check_equal(to_string(o_datab),x"aaaaaaaa");
+			elsif run("No Write when enable not asserted") then
+				i_enable <= '0';
+				i_selectdest <= "000001";
+				i_datadest <= x"aaaaaaaa";
+				i_write_enable<='1';
+				i_selecta <= "000001";
+				wait for i_clk_period;
+
+				check_equal(to_string(o_dataa),x"00000000");
+			elsif run("No Write when write_enable not asserted") then
 				i_enable <= '1';
 
 				i_selectdest <= "000001";
@@ -88,7 +142,7 @@ begin
 				i_selecta <= "000001";
 				wait for i_clk_period;
 
-				check_equal(to_string(o_dataa),x"000000000");
+				check_equal(to_string(o_dataa),x"00000000");
 			elsif run("Register 0 cannot be overriden") then
 				i_enable <= '1';
 
