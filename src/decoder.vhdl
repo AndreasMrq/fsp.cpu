@@ -2,19 +2,19 @@ library ieee;
 use ieee.numeric_std.all;
 use ieee.std_logic_1164.all;
 
-entity decode is
+entity decoder is
     port ( i_clock : in  std_logic;
-           i_data_instruction : in  std_logic_vector (15 downto 0);
+           i_data_instruction : in  std_logic_vector (31 downto 0);
            i_enable : in  std_logic;
-           o_selecta : out  std_logic_vector (2 downto 0);
-           o_selectb : out  std_logic_vector (2 downto 0);
-           o_selectdest : out  std_logic_vector (2 downto 0);
-           o_data_imm : out  std_logic_vector (15 downto 0);
+           o_selecta : out  std_logic_vector (5 downto 0);
+           o_selectb : out  std_logic_vector (5 downto 0);
+           o_selectdest : out  std_logic_vector (5 downto 0);
+           o_data_imm : out  std_logic_vector (31 downto 0);
            o_write_enable : out  std_logic;
-           o_opcode : out  std_logic_vector (4 downto 0));
-end decode;
+           o_opcode : out  std_logic_vector (6 downto 0));
+end decoder;
 
-architecture behavioral of decode is
+architecture behavioral of decoder is
 
 begin
 

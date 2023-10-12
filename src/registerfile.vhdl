@@ -8,9 +8,9 @@ port ( i_clock : in  std_logic;
        i_datadest : in  std_logic_vector (31 downto 0);
        o_dataa : out  std_logic_vector (31 downto 0);
        o_datab : out  std_logic_vector (31 downto 0);
-       i_selecta : in  std_logic_vector (5 downto 0);
-       i_selectb : in  std_logic_vector (5 downto 0);
-       i_selectdest : in  std_logic_vector (5 downto 0);
+       i_selecta : in  std_logic_vector (4 downto 0);
+       i_selectb : in  std_logic_vector (4 downto 0);
+       i_selectdest : in  std_logic_vector (4 downto 0);
        i_write_enable : in  std_logic);
 end register_file;
 

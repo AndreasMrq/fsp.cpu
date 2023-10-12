@@ -18,9 +18,9 @@ architecture tb of tb_registerfile is
 	signal i_clock : std_logic := '0';
 	signal i_enable : std_logic := '0';
 	signal i_datadest : std_logic_vector (31 downto 0) := (others => '0');
-	signal i_selecta : std_logic_vector (5 downto 0) := (others => '0');
-	signal i_selectb : std_logic_vector (5 downto 0) := (others => '0');
-	signal i_selectdest : std_logic_vector (5 downto 0) := (others => '0');
+	signal i_selecta : std_logic_vector (4 downto 0) := (others => '0');
+	signal i_selectb : std_logic_vector (4 downto 0) := (others => '0');
+	signal i_selectdest : std_logic_vector (4 downto 0) := (others => '0');
 	signal i_write_enable : std_logic := '0';
 
 	signal o_dataa :  std_logic_vector (31 downto 0);
@@ -68,12 +68,12 @@ begin
 				end loop;
 			elsif run("Read Write on same cycle") then
 				i_enable <= '1';
-				i_selectdest <= "000001";
+				i_selectdest <= "00001";
 				i_datadest <= x"aaaaaaaa";
 				i_write_enable <= '1';
 				wait for i_clk_period;
 				i_datadest <= x"bbbbbbbb";
-				i_selecta <= "000001";
+				i_selecta <= "00001";
 				wait for i_clk_period;
 				check_equal(to_string(o_dataa),x"aaaaaaaa");
 			elsif run("Read Write test select A") then
@@ -111,26 +111,26 @@ begin
 			elsif run("Both selects for same register") then
 				i_enable <= '1';
 
-				i_selectdest <= "000001";
+				i_selectdest <= "00001";
 				i_datadest <= x"aaaaaaaa";
 				i_write_enable<='1';
 				wait for i_clk_period;
 
-				i_selecta <= "000001";
-				i_selectb <= "000001";
+				i_selecta <= "00001";
+				i_selectb <= "00001";
 				wait for i_clk_period;
 
 				check_equal(to_string(o_dataa),x"aaaaaaaa");
 				check_equal(to_string(o_datab),x"aaaaaaaa");
 			elsif run("No Write when enable not asserted") then
 				i_enable <= '0';
-				i_selectdest <= "000001";
+				i_selectdest <= "00001";
 				i_datadest <= x"aaaaaaaa";
 				i_write_enable<='1';
-				i_selecta <= "000001";
+				i_selecta <= "00001";
 				wait for i_clk_period;
 				i_enable <= '1';
-				i_selectdest <= "000000";
+				i_selectdest <= "00000";
 				i_write_enable<='1';
 				wait for i_clk_period;
 
@@ -138,29 +138,29 @@ begin
 			elsif run("No Write when write_enable not asserted") then
 				i_enable <= '1';
 
-				i_selectdest <= "000001";
+				i_selectdest <= "00001";
 				i_datadest <= x"aaaaaaaa";
 				i_write_enable<='0';
 				wait for i_clk_period;
 
-				i_selectdest <= "000000";
+				i_selectdest <= "00000";
 				i_datadest <= (others => '0');
 				i_write_enable<='0';
-				i_selecta <= "000001";
+				i_selecta <= "00001";
 				wait for i_clk_period;
 
 				check_equal(to_string(o_dataa),x"00000000");
 			elsif run("Register 0 cannot be overriden") then
 				i_enable <= '1';
 
-				i_selectdest <= "000000";
+				i_selectdest <= "00000";
 				i_datadest <= x"aaaaaaaa";
 				i_write_enable<='1';
 				wait for i_clk_period;
 
 				i_datadest <= (others => '0');
 				i_write_enable<='0';
-				i_selecta <= "000000";
+				i_selecta <= "00000";
 				wait for i_clk_period;
 
 				check_equal(to_string(o_dataa),x"00000000");
