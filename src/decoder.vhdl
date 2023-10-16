@@ -6,9 +6,9 @@ entity decoder is
     port ( i_clock : in  std_logic;
            i_data_instruction : in  std_logic_vector (31 downto 0);
            i_enable : in  std_logic;
-           o_selecta : out  std_logic_vector (5 downto 0);
-           o_selectb : out  std_logic_vector (5 downto 0);
-           o_selectdest : out  std_logic_vector (5 downto 0);
+           o_selecta : out  std_logic_vector (4 downto 0);
+           o_selectb : out  std_logic_vector (4 downto 0);
+           o_selectdest : out  std_logic_vector (4 downto 0);
            o_data_imm : out  std_logic_vector (31 downto 0);
            o_write_enable : out  std_logic;
            o_opcode : out  std_logic_vector (6 downto 0));
@@ -22,9 +22,11 @@ begin
   begin
     if rising_edge(i_clock) and i_enable = '1' then
 
-      o_selecta <= i_data_instruction(7 downto 5);
-      o_selectb <= i_data_instruction(4 downto 2);
-      o_selectdest <= i_data_instruction(11 downto 9);
+      o_opcode <= i_data_instruction(6 downto 0);
+      o_selectdest <= i_data_instruction(11 downto 7);
+      o_selecta <= i_data_instruction(19 downto 15);
+      o_selectb <= i_data_instruction(24 downto 20);
+
       o_data_imm <= i_data_instruction(7 downto 0) & i_data_instruction(7 downto 0);
       o_opcode <= i_data_instruction(15 downto 12) & i_data_instruction(8);
 
