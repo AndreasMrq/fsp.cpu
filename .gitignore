@@ -1,1 +1,5 @@
 tests/vunit_out/
+.venv/
+__pycache__/
+sim_build/
+*.cf

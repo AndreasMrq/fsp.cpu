@@ -1,15 +1,22 @@
+from typing import List
 from pathlib import Path
 import cocotb
 from cocotb.runner import get_runner
 from cocotb.triggers import FallingEdge, Timer, RisingEdge
 from cocotb.clock import Clock
 from hypothesis import given
-from hypothesis.strategies import integers
+from hypothesis.strategies import integers, lists, data
 import pytest
 
 rd_lsb=7
 r1_lsb=15
 r2_lsb=20
+
+def _generate_immediates(bits: int) -> List[int]:
+    integer_strat =integers(min_value=0, max_value=(1<<bits)-1)
+    list_strat = lists(integer_strat,min_size=10,max_size=100)
+    return list_strat.example()
+
 
 @cocotb.test()
 async def test_op_code_forwarded_correctly(dut):
@@ -19,12 +26,13 @@ async def test_op_code_forwarded_correctly(dut):
     dut.i_enable.value=1
     await RisingEdge(dut.i_clock)
 
-    dut.i_data_instruction.value=1
+    for op_code in range(0, (1<<7)-1):
+        dut.i_data_instruction.value=op_code
 
-    await RisingEdge(dut.i_clock)
-    await RisingEdge(dut.i_clock)
+        await RisingEdge(dut.i_clock)
+        await RisingEdge(dut.i_clock)
 
-    assert dut.o_opcode.value == 1
+        assert dut.o_opcode.value == op_code
 
 @cocotb.test()
 async def test_rd_decoded_correctyl(dut):
@@ -33,13 +41,14 @@ async def test_rd_decoded_correctyl(dut):
 
     dut.i_enable.value=1
     await RisingEdge(dut.i_clock)
+    
+    for selectdest in range(0,(1<<5)-1):
+        dut.i_data_instruction.value=selectdest<<rd_lsb
 
-    dut.i_data_instruction.value=1<<rd_lsb
+        await RisingEdge(dut.i_clock)
+        await RisingEdge(dut.i_clock)
 
-    await RisingEdge(dut.i_clock)
-    await RisingEdge(dut.i_clock)
-
-    assert dut.o_selectdest.value == 1
+        assert dut.o_selectdest.value == selectdest
 
 @cocotb.test()
 async def test_r1_decoded_correctly(dut):
@@ -49,12 +58,13 @@ async def test_r1_decoded_correctly(dut):
     dut.i_enable.value=1
     await RisingEdge(dut.i_clock)
 
-    dut.i_data_instruction.value=1<<r1_lsb
+    for selecta in range(0,(1<<5)-1):
+        dut.i_data_instruction.value=selecta<<r1_lsb
 
-    await RisingEdge(dut.i_clock)
-    await RisingEdge(dut.i_clock)
+        await RisingEdge(dut.i_clock)
+        await RisingEdge(dut.i_clock)
 
-    assert dut.o_selecta.value == 1
+        assert dut.o_selecta.value == selecta
 
 @cocotb.test()
 async def test_r2_decoded_correctly(dut):
@@ -64,12 +74,73 @@ async def test_r2_decoded_correctly(dut):
     dut.i_enable.value=1
     await RisingEdge(dut.i_clock)
 
-    dut.i_data_instruction.value=1<<r2_lsb
+    for selectb in range(0,(1<<5)-1):
+        dut.i_data_instruction.value=selectb<<r2_lsb
 
-    await RisingEdge(dut.i_clock)
+        await RisingEdge(dut.i_clock)
+        await RisingEdge(dut.i_clock)
+
+        assert dut.o_selectb.value == selectb
+
+@cocotb.test()
+async def test_immediate_correct_for_lui_and_auipc(dut):
+    cocotb.start_soon(Clock(dut.i_clock, 1, units="ns").start())
+    await Timer(5, units="ns")  # wait a bit
+
+    dut.i_enable.value=1
     await RisingEdge(dut.i_clock)
 
-    assert dut.o_selectb.value == 1
+    immediates = _generate_immediates(20)
+
+    for immediate in immediates:
+        for op_code in [0b0110111,0b0010111]:   
+            instr = op_code + (immediate<<12)
+            dut.i_data_instruction.value=instr
+
+            await RisingEdge(dut.i_clock)
+            await RisingEdge(dut.i_clock)
+
+            assert dut.o_data_imm.value == immediate<<12
+
+@cocotb.test()
+async def test_immediate_correct_for_JALR_and_LOAD(dut):
+    cocotb.start_soon(Clock(dut.i_clock, 1, units="ns").start())
+    await Timer(5, units="ns")  # wait a bit
+
+    dut.i_enable.value=1
+    await RisingEdge(dut.i_clock)
+
+    immediates = _generate_immediates(12)
+
+    for immediate in immediates:
+        for op_code in [0b1100111,0b0000011]:   
+            instr = op_code + (immediate<<20)
+            dut.i_data_instruction.value=instr
+
+            await RisingEdge(dut.i_clock)
+            await RisingEdge(dut.i_clock)
+
+            assert dut.o_data_imm.value == immediate
+
+@cocotb.test()
+async def test_immediate_correct_for_JAL(dut):
+    cocotb.start_soon(Clock(dut.i_clock, 1, units="ns").start())
+    await Timer(5, units="ns")  # wait a bit
+
+    dut.i_enable.value=1
+    await RisingEdge(dut.i_clock)
+
+    immediates = _generate_immediates(20)
+
+    for immediate in immediates:
+        op_code = 0b1101111
+        instr = op_code + (immediate<<20)
+        dut.i_data_instruction.value=instr
+
+        await RisingEdge(dut.i_clock)
+        await RisingEdge(dut.i_clock)
+
+        assert dut.o_data_imm.value == immediate
 
 def test_decoder():
     proj_path = Path(__file__).resolve().parent

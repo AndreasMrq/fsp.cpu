@@ -33,20 +33,34 @@ begin
       o_selectb <= i_data_instruction(R2_START downto R2_END);
 
       case i_data_instruction(OPCODE_START downto OPCODE_END) is
-        when OP_LUI => 
-	  o_data_imm <= i_data_instruction(31 downto 12) & ZERO(11 downto 0);
-        when OP_AUIPC => 
-	  o_data_imm <= i_data_instruction(31 downto 12) & ZERO(11 downto 0);
+        when OP_LUI | OP_AUIPC => 
+	  o_data_imm <= i_data_instruction(31 downto 12) &
+			ZERO(11 downto 0);
+
  	when OP_JAL => 
-	  o_data_imm <= ZERO(31 downto 21) & i_data_instruction(31) & i_data_instruction(19 downto 12) & i_data_instruction(20) & i_data_instruction(30 downto 21) & ZERO(0);
-        when OP_JALR => 
-	  o_data_imm <= ZERO(31 downto 12) & i_data_instruction(31 downto 20);
+	  o_data_imm <= ZERO(31 downto 21) &
+			i_data_instruction(31) &
+			i_data_instruction(19 downto 12) &
+			i_data_instruction(20) &
+			i_data_instruction(30 downto 21) &
+			ZERO(0);
+
+        when OP_JALR | OP_LOAD => 
+	  o_data_imm <= ZERO(31 downto 12) &
+			i_data_instruction(31 downto 20);
+
         when OP_BRANCH =>
-	  o_data_imm <= ZERO(31 downto 13) & i_data_instruction(31) & i_data_instruction(7) & i_data_instruction(30 downto 25) & i_data_instruction(11 downto 8) & ZERO(0);
-        when OP_LOAD =>
-	  o_data_imm <= ZERO(31 downto 12) & i_data_instruction(31 downto 20);
+	  o_data_imm <= ZERO(31 downto 13) &
+			i_data_instruction(31) &
+			i_data_instruction(7) &
+			i_data_instruction(30 downto 25) &
+			i_data_instruction(11 downto 8) &
+			ZERO(0);
+
         when OP_STORE =>
-	  o_data_imm <= ZERO(31 downto 12) & i_data_instruction(31 downto 25) & i_data_instruction(11 downto 7);
+	  o_data_imm <= ZERO(31 downto 12) &
+			i_data_instruction(31 downto 25) &
+			i_data_instruction(11 downto 7);
         when others =>
           o_write_enable <= '1';
       end case;
