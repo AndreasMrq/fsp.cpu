@@ -1,10 +1,9 @@
-from typing import List
+from typing import List, Tuple
 from pathlib import Path
 import cocotb
 from cocotb.runner import get_runner
 from cocotb.triggers import FallingEdge, Timer, RisingEdge
 from cocotb.clock import Clock
-from hypothesis import given
 from hypothesis.strategies import integers, lists, data
 import pytest
 
@@ -17,6 +16,11 @@ def _generate_immediates(bits: int) -> List[int]:
     list_strat = lists(integer_strat,min_size=10,max_size=100)
     return list_strat.example()
 
+def _map_to_instruction(immediate: int, mapping: List[Tuple[int,int]]):
+    result = 0
+    for initial,to in mapping:
+        result = result + (((immediate>>initial) & 1)<<to)
+    return result
 
 @cocotb.test()
 async def test_op_code_forwarded_correctly(dut):
@@ -132,15 +136,24 @@ async def test_immediate_correct_for_JAL(dut):
 
     immediates = _generate_immediates(20)
 
+    immediate_mapping = []
+    for i in range(0,10):
+        immediate_mapping.append((i, 21+i))
+    for i in range(0,8):
+        immediate_mapping.append((11 + i, 12 +i))
+    immediate_mapping.append((10,20))
+    immediate_mapping.append((19,31))
+
+
     for immediate in immediates:
         op_code = 0b1101111
-        instr = op_code + (immediate<<20)
+        instr = op_code + _map_to_instruction(immediate,immediate_mapping)
         dut.i_data_instruction.value=instr
 
         await RisingEdge(dut.i_clock)
         await RisingEdge(dut.i_clock)
 
-        assert dut.o_data_imm.value == immediate
+        assert dut.o_data_imm.value == (immediate<<1)
 
 def test_decoder():
     proj_path = Path(__file__).resolve().parent
