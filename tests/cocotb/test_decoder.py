@@ -155,6 +155,83 @@ async def test_immediate_correct_for_JAL(dut):
 
         assert dut.o_data_imm.value == (immediate<<1)
 
+@cocotb.test()
+async def test_immediate_correct_for_BRANCH(dut):
+    cocotb.start_soon(Clock(dut.i_clock, 1, units="ns").start())
+    await Timer(5, units="ns")  # wait a bit
+
+    dut.i_enable.value=1
+    await RisingEdge(dut.i_clock)
+
+    immediates = _generate_immediates(12)
+
+    immediate_mapping = []
+    for i in range(0,4):
+        immediate_mapping.append((i, 8+i))
+    for i in range(0,6):
+        immediate_mapping.append((4 + i, 25 +i))
+    immediate_mapping.append((10,7))
+    immediate_mapping.append((11,31))
+
+
+    for immediate in immediates:
+        op_code = 0b1100011
+        instr = op_code + _map_to_instruction(immediate,immediate_mapping)
+        dut.i_data_instruction.value=instr
+
+        await RisingEdge(dut.i_clock)
+        await RisingEdge(dut.i_clock)
+
+        assert dut.o_data_imm.value == (immediate<<1)
+
+@cocotb.test()
+async def test_immediate_correct_for_STORE(dut):
+    cocotb.start_soon(Clock(dut.i_clock, 1, units="ns").start())
+    await Timer(5, units="ns")  # wait a bit
+
+    dut.i_enable.value=1
+    await RisingEdge(dut.i_clock)
+
+    immediates = _generate_immediates(12)
+
+    immediate_mapping = []
+    for i in range(0,5):
+        immediate_mapping.append((i, 7+i))
+    for i in range(0,7):
+        immediate_mapping.append((5 + i, 25 +i))
+
+    for immediate in immediates:
+        op_code = 0b0100011
+        instr = op_code + _map_to_instruction(immediate,immediate_mapping)
+
+        dut.i_data_instruction.value=instr
+
+        await RisingEdge(dut.i_clock)
+        await RisingEdge(dut.i_clock)
+
+        assert dut.o_data_imm.value == immediate
+
+@cocotb.test()
+async def test_immediate_correct_for_IMM(dut):
+    cocotb.start_soon(Clock(dut.i_clock, 1, units="ns").start())
+    await Timer(5, units="ns")  # wait a bit
+
+    dut.i_enable.value=1
+    await RisingEdge(dut.i_clock)
+
+    immediates = _generate_immediates(12)
+
+    for immediate in immediates:
+        op_code = 0b0010011
+        instr = op_code + (immediate << 20) 
+
+        dut.i_data_instruction.value=instr
+
+        await RisingEdge(dut.i_clock)
+        await RisingEdge(dut.i_clock)
+
+        assert dut.o_data_imm.value == immediate
+
 def test_decoder():
     proj_path = Path(__file__).resolve().parent
     src_path = proj_path.parent.parent / "src"

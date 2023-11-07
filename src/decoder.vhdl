@@ -14,57 +14,63 @@ entity decoder is
            o_data_imm : out  std_logic_vector (31 downto 0);
            o_write_enable : out  std_logic;
            o_opcode : out  std_logic_vector (6 downto 0);
-    	   o_function: out std_logic_vector (9 downto 0)
-    );
+           o_function: out std_logic_vector (9 downto 0)
+       );
 end decoder;
 
 architecture behavioral of decoder is
 
-constant ZERO : std_logic_vector(31 downto 0) := (others => '0');
+    constant ZERO : std_logic_vector(31 downto 0) := (others => '0');
 
 begin
-  process (i_clock)
-  begin
-    if rising_edge(i_clock) and i_enable = '1' then
+    process (i_clock)
+    begin
+        if rising_edge(i_clock) and i_enable = '1' then
 
-      o_opcode <= i_data_instruction(OPCODE_START downto OPCODE_END);
-      o_selectdest <= i_data_instruction(RD_START downto RD_END);
-      o_selecta <= i_data_instruction(R1_START downto R1_END);
-      o_selectb <= i_data_instruction(R2_START downto R2_END);
+            o_opcode <= i_data_instruction(OPCODE_START downto OPCODE_END);
+            o_selectdest <= i_data_instruction(RD_START downto RD_END);
+            o_selecta <= i_data_instruction(R1_START downto R1_END);
+            o_selectb <= i_data_instruction(R2_START downto R2_END);
+            o_function <= i_data_instruction(FUNCT7_START downto FUNCT7_END) & 
+                          i_data_instruction(FUNCT3_START downto FUNCT3_END);
 
-      case i_data_instruction(OPCODE_START downto OPCODE_END) is
-        when OP_LUI | OP_AUIPC => 
-	  o_data_imm <= i_data_instruction(31 downto 12) &
-			ZERO(11 downto 0);
+            case i_data_instruction(OPCODE_START downto OPCODE_END) is
+                when OP_LUI | OP_AUIPC => 
+                    o_data_imm <= i_data_instruction(31 downto 12) &
+                                  ZERO(11 downto 0);
 
- 	when OP_JAL => 
-	  o_data_imm <= ZERO(31 downto 21) &
-			i_data_instruction(31) &
-			i_data_instruction(19 downto 12) &
-			i_data_instruction(20) &
-			i_data_instruction(30 downto 21) &
-			ZERO(0);
+                when OP_JAL => 
+                    o_data_imm <= ZERO(31 downto 21) &
+                                  i_data_instruction(31) &
+                                  i_data_instruction(19 downto 12) &
+                                  i_data_instruction(20) &
+                                  i_data_instruction(30 downto 21) &
+                                  ZERO(0);
 
-        when OP_JALR | OP_LOAD => 
-	  o_data_imm <= ZERO(31 downto 12) &
-			i_data_instruction(31 downto 20);
+                when OP_JALR | OP_LOAD => 
+                    o_data_imm <= ZERO(31 downto 12) &
+                                  i_data_instruction(31 downto 20);
 
-        when OP_BRANCH =>
-	  o_data_imm <= ZERO(31 downto 13) &
-			i_data_instruction(31) &
-			i_data_instruction(7) &
-			i_data_instruction(30 downto 25) &
-			i_data_instruction(11 downto 8) &
-			ZERO(0);
+                when OP_BRANCH =>
+                    o_data_imm <= ZERO(31 downto 13) &
+                                  i_data_instruction(31) &
+                                  i_data_instruction(7) &
+                                  i_data_instruction(30 downto 25) &
+                                  i_data_instruction(11 downto 8) &
+                                  ZERO(0);
 
-        when OP_STORE =>
-	  o_data_imm <= ZERO(31 downto 12) &
-			i_data_instruction(31 downto 25) &
-			i_data_instruction(11 downto 7);
-        when others =>
-          o_write_enable <= '1';
-      end case;
-    end if;
-  end process;
+                when OP_STORE =>
+                    o_data_imm <= ZERO(31 downto 12) &
+                                  i_data_instruction(31 downto 25) &
+                                  i_data_instruction(11 downto 7);
+                when OP_IMM =>
+                    o_data_imm <= ZERO(31 downto 12) &
+                                  i_data_instruction(31 downto 20);
+                when others =>
+                    o_data_imm <= ZERO(31 downto 0);
+                    o_write_enable <= '1';
+            end case;
+        end if;
+    end process;
 
 end behavioral;
