@@ -256,7 +256,7 @@ async def test_function3_correct(dut):
             await RisingEdge(dut.i_clock)
             await RisingEdge(dut.i_clock)
 
-            assert dut.o_function.value == fun3
+            assert dut.o_fun3.value == fun3
 
 @cocotb.test()
 async def test_function7_correct(dut):
@@ -279,7 +279,7 @@ async def test_function7_correct(dut):
             await RisingEdge(dut.i_clock)
             await RisingEdge(dut.i_clock)
 
-            assert dut.o_function.value == (fun7<<3)
+            assert dut.o_fun7.value == fun7
 
 def test_decoder():
     proj_path = Path(__file__).resolve().parent

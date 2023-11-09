@@ -14,7 +14,8 @@ entity decoder is
            o_data_imm : out  std_logic_vector (31 downto 0);
            o_write_enable : out  std_logic;
            o_opcode : out  std_logic_vector (6 downto 0);
-           o_function: out std_logic_vector (9 downto 0)
+           o_fun3: out std_logic_vector (2 downto 0);
+           o_fun7: out std_logic_vector (6 downto 0)
        );
 end decoder;
 
@@ -31,8 +32,8 @@ begin
             o_selectdest <= i_data_instruction(RD_START downto RD_END);
             o_selecta <= i_data_instruction(R1_START downto R1_END);
             o_selectb <= i_data_instruction(R2_START downto R2_END);
-            o_function <= i_data_instruction(FUNCT7_START downto FUNCT7_END) & 
-                          i_data_instruction(FUNCT3_START downto FUNCT3_END);
+            o_fun3 <= i_data_instruction(FUNCT3_START downto FUNCT3_END);
+			o_fun7 <= i_data_instruction(FUNCT7_START downto FUNCT7_END); 
 
             case i_data_instruction(OPCODE_START downto OPCODE_END) is
                 when OP_LUI | OP_AUIPC => 

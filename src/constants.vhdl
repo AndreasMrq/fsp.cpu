@@ -107,6 +107,8 @@ package constants is
 	constant F7_OP_OR: std_logic_vector(6 downto 0) := "0000000";
 	constant F3_OP_AND: std_logic_vector(2 downto 0) := "111";
 	constant F7_OP_AND: std_logic_vector(6 downto 0) := "0000000";
+
+    constant ZERO : std_logic_vector(31 downto 0) := (others => '0');
 end constants;
 
 package body constants is
