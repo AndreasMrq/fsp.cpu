@@ -11,7 +11,7 @@ rd_lsb=7
 r1_lsb=15
 r2_lsb=20
 
-def _generate_immediates(bits: int) -> List[int]:
+def _generate_sized_ints(bits: int) -> List[int]:
     integer_strat =integers(min_value=0, max_value=(1<<bits)-1)
     list_strat = lists(integer_strat,min_size=10,max_size=100)
     return list_strat.example()
@@ -94,7 +94,7 @@ async def test_immediate_correct_for_lui_and_auipc(dut):
     dut.i_enable.value=1
     await RisingEdge(dut.i_clock)
 
-    immediates = _generate_immediates(20)
+    immediates = _generate_sized_ints(20)
 
     for immediate in immediates:
         for op_code in [0b0110111,0b0010111]:   
@@ -114,7 +114,7 @@ async def test_immediate_correct_for_JALR_and_LOAD(dut):
     dut.i_enable.value=1
     await RisingEdge(dut.i_clock)
 
-    immediates = _generate_immediates(12)
+    immediates = _generate_sized_ints(12)
 
     for immediate in immediates:
         for op_code in [0b1100111,0b0000011]:   
@@ -134,7 +134,7 @@ async def test_immediate_correct_for_JAL(dut):
     dut.i_enable.value=1
     await RisingEdge(dut.i_clock)
 
-    immediates = _generate_immediates(20)
+    immediates = _generate_sized_ints(20)
 
     immediate_mapping = []
     for i in range(0,10):
@@ -163,7 +163,7 @@ async def test_immediate_correct_for_BRANCH(dut):
     dut.i_enable.value=1
     await RisingEdge(dut.i_clock)
 
-    immediates = _generate_immediates(12)
+    immediates = _generate_sized_ints(12)
 
     immediate_mapping = []
     for i in range(0,4):
@@ -192,7 +192,7 @@ async def test_immediate_correct_for_STORE(dut):
     dut.i_enable.value=1
     await RisingEdge(dut.i_clock)
 
-    immediates = _generate_immediates(12)
+    immediates = _generate_sized_ints(12)
 
     immediate_mapping = []
     for i in range(0,5):
@@ -219,7 +219,7 @@ async def test_immediate_correct_for_IMM(dut):
     dut.i_enable.value=1
     await RisingEdge(dut.i_clock)
 
-    immediates = _generate_immediates(12)
+    immediates = _generate_sized_ints(12)
 
     for immediate in immediates:
         op_code = 0b0010011
@@ -231,6 +231,55 @@ async def test_immediate_correct_for_IMM(dut):
         await RisingEdge(dut.i_clock)
 
         assert dut.o_data_imm.value == immediate
+
+@cocotb.test()
+async def test_function3_correct(dut):
+    cocotb.start_soon(Clock(dut.i_clock, 1, units="ns").start())
+    await Timer(5, units="ns")  # wait a bit
+
+    dut.i_enable.value=1
+    await RisingEdge(dut.i_clock)
+
+    op_codes=[0b1100011, # BRANCH
+              0b0000011, # LOAD
+              0b0100011, # STORE
+              0b0010011, # IMM
+              0b0110011] # REGREG
+    function3_codes = _generate_sized_ints(3)
+
+    for fun3 in function3_codes:
+        for op in op_codes:
+            instr = op + (fun3 << 12) 
+
+            dut.i_data_instruction.value=instr
+
+            await RisingEdge(dut.i_clock)
+            await RisingEdge(dut.i_clock)
+
+            assert dut.o_function.value == fun3
+
+@cocotb.test()
+async def test_function7_correct(dut):
+    cocotb.start_soon(Clock(dut.i_clock, 1, units="ns").start())
+    await Timer(5, units="ns")  # wait a bit
+
+    dut.i_enable.value=1
+    await RisingEdge(dut.i_clock)
+
+    op_codes=[0b0010011, # IMM
+              0b0110011] # REGREG
+    function7_codes = _generate_sized_ints(7)
+
+    for fun7 in function7_codes:
+        for op in op_codes:
+            instr = op + (fun7 << 25) 
+
+            dut.i_data_instruction.value=instr
+
+            await RisingEdge(dut.i_clock)
+            await RisingEdge(dut.i_clock)
+
+            assert dut.o_function.value == (fun7<<3)
 
 def test_decoder():
     proj_path = Path(__file__).resolve().parent
