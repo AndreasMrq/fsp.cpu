@@ -10,8 +10,8 @@ entity alu is
            i_op_code : in  std_logic_vector (6 downto 0);
            i_fun3 : in std_logic_vector(2 downto 0);
            i_fun7 : in std_logic_vector(6 downto 0);
-           i_data_a : in std_logic_vector(31 downto 0);
-           i_data_b : in std_logic_vector(31 downto 0);
+           i_data_s1 : in std_logic_vector(31 downto 0);
+           i_data_s2 : in std_logic_vector(31 downto 0);
            i_data_immediate : in std_logic_vector(31 downto 0);
            o_data_result : out std_logic_vector(31 downto 0);
            o_should_branch: out std_logic;
@@ -30,15 +30,29 @@ function calculate_imm(
 ) 
 return std_logic_vector is 
     variable result : std_logic_vector(31 downto 0);
-    variable extended_immediate: signed(31 downto 0);
+    variable ext_imm: signed(31 downto 0);
     begin
         case fun3(2 downto 0) is
             when F3_OPIMM_ADDI =>
                 -- Add sign extended 12 bit immediate to data
                 -- Ignore Overflow
-                extended_immediate := resize(signed(immediate(11 downto 0)), 32);
-                result := std_logic_vector(signed(data(31 downto 0)) + extended_immediate);
+                ext_imm := resize(signed(immediate(11 downto 0)), 32);
+                result := std_logic_vector(signed(data(31 downto 0)) + ext_imm);
                 return result(31 downto 0);
+            when F3_OPIMM_SLTI =>
+                -- Set less than immediate
+                -- result is 1 if is less than sign ext imm, else 0
+                ext_imm := resize(signed(immediate(11 downto 0)), 32);
+                result(31 downto 1) := ZERO(31 downto 1);
+                result(0) := '1' when signed(data(31 downto 0))<ext_imm else '0';
+                return result;
+            when F3_OPIMM_SLTIU =>
+                -- Set less than immediate unsigned
+                -- result is 1 if is less than sign ext imm as unsigned, else 0
+                ext_imm := resize(signed(immediate(11 downto 0)), 32);
+                result(31 downto 1) := ZERO(31 downto 1);
+                result(0) := '1' when unsigned(data(31 downto 0))<unsigned(ext_imm) else '0';
+                return result;
             when others =>
                 return result;
         end case;
@@ -51,7 +65,7 @@ begin
         if rising_edge(i_clock) and i_enable = '1' then
             case i_op_code(6 downto 0) is
                 when OP_IMM => 
-                    o_data_result <= calculate_imm(i_data_a, i_data_immediate, i_fun3, i_fun7);
+                    o_data_result <= calculate_imm(i_data_s1, i_data_immediate, i_fun3, i_fun7);
                 when others =>
                     o_data_result <= ZERO(31 downto 0);
 		    end case;
