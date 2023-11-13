@@ -123,6 +123,90 @@ async def test_IMM_SLTIU_negative_immediate(dut):
             expected_result = 1 if dat<extended_imm else 0
             assert dut.o_data_result.value == expected_result
 
+@cocotb.test()
+async def test_IMM_XORI(dut):
+    cocotb.start_soon(Clock(dut.i_clock, 1, units="ns").start())
+    await Timer(5, units="ns")  # wait a bit
+
+    dut.i_enable.value=1
+    await RisingEdge(dut.i_clock)
+
+    # generate 12 bit signed immediates
+    immediates = _generate_ints(-((1<<11)-1),-1)
+    # generate 31 bit ints as data
+    data = _generate_ints(0, ((1<<31)-1))
+
+    for immediate in immediates:
+        for dat in data:
+            dut.i_op_code.value=0b0010011 #op imm
+            dut.i_fun3.value=0b100 #xori
+            dut.i_data_s1.value=dat
+            dut.i_data_immediate.value=immediate
+
+            await RisingEdge(dut.i_clock)
+            await RisingEdge(dut.i_clock)
+
+            extended_imm = _to_32_bit(immediate)
+            dat32 = _to_32_bit(dat)
+            expected_result = extended_imm ^ dat32
+            assert dut.o_data_result.value == expected_result
+
+@cocotb.test()
+async def test_IMM_ORI(dut):
+    cocotb.start_soon(Clock(dut.i_clock, 1, units="ns").start())
+    await Timer(5, units="ns")  # wait a bit
+
+    dut.i_enable.value=1
+    await RisingEdge(dut.i_clock)
+
+    # generate 12 bit signed immediates
+    immediates = _generate_ints(-((1<<11)-1),-1)
+    # generate 31 bit ints as data
+    data = _generate_ints(0, ((1<<31)-1))
+
+    for immediate in immediates:
+        for dat in data:
+            dut.i_op_code.value=0b0010011 #op imm
+            dut.i_fun3.value=0b110 #ori
+            dut.i_data_s1.value=dat
+            dut.i_data_immediate.value=immediate
+
+            await RisingEdge(dut.i_clock)
+            await RisingEdge(dut.i_clock)
+
+            extended_imm = _to_32_bit(immediate)
+            dat32 = _to_32_bit(dat)
+            expected_result = extended_imm | dat32
+            assert dut.o_data_result.value == expected_result
+
+@cocotb.test()
+async def test_IMM_ANDI(dut):
+    cocotb.start_soon(Clock(dut.i_clock, 1, units="ns").start())
+    await Timer(5, units="ns")  # wait a bit
+
+    dut.i_enable.value=1
+    await RisingEdge(dut.i_clock)
+
+    # generate 12 bit signed immediates
+    immediates = _generate_ints(-((1<<11)-1),-1)
+    # generate 31 bit ints as data
+    data = _generate_ints(0, ((1<<31)-1))
+
+    for immediate in immediates:
+        for dat in data:
+            dut.i_op_code.value=0b0010011 #op imm
+            dut.i_fun3.value=0b111 #andi
+            dut.i_data_s1.value=dat
+            dut.i_data_immediate.value=immediate
+
+            await RisingEdge(dut.i_clock)
+            await RisingEdge(dut.i_clock)
+
+            extended_imm = _to_32_bit(immediate)
+            dat32 = _to_32_bit(dat)
+            expected_result = extended_imm & dat32
+            assert dut.o_data_result.value == expected_result
+
 def test_alu():
     proj_path = Path(__file__).resolve().parent
     src_path = proj_path.parent.parent / "src"

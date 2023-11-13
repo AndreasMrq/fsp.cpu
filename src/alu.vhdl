@@ -53,6 +53,26 @@ return std_logic_vector is
                 result(31 downto 1) := ZERO(31 downto 1);
                 result(0) := '1' when unsigned(data(31 downto 0))<unsigned(ext_imm) else '0';
                 return result;
+            when F3_OPIMM_XORI =>
+                -- Bitwise XOR with sign extended immediate
+                ext_imm := resize(signed(immediate(11 downto 0)), 32);
+                return data(31 downto 0) xor std_logic_vector(ext_imm);
+            when F3_OPIMM_ORI =>
+                -- Bitwise OR with sign extended immediate
+                ext_imm := resize(signed(immediate(11 downto 0)), 32);
+                return data(31 downto 0) or std_logic_vector(ext_imm);
+            when F3_OPIMM_ANDI =>
+                -- Bitwise XOR with sign extended immediate
+                ext_imm := resize(signed(immediate(11 downto 0)), 32);
+                return data(31 downto 0) and std_logic_vector(ext_imm);
+            when F3_OPIMM_SLLI =>
+                -- Logical Left Shift (zeros shifted into lsbs)
+                result := data sll unsigned(immediate(4 downto 0));
+                return data(31 downto 0) and std_logic_vector(ext_imm);
+            when F3_OPIMM_SRLI =>
+                -- Logical Right Shift (zeros shifted into lsbs)
+                result := data srl unsigned(immediate(4 downto 0));
+                return data(31 downto 0) and std_logic_vector(ext_imm);
             when others =>
                 return result;
         end case;
