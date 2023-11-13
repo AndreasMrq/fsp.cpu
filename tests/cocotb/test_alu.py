@@ -207,6 +207,133 @@ async def test_IMM_ANDI(dut):
             expected_result = extended_imm & dat32
             assert dut.o_data_result.value == expected_result
 
+@cocotb.test()
+async def test_IMM_SLLI(dut):
+    cocotb.start_soon(Clock(dut.i_clock, 1, units="ns").start())
+    await Timer(5, units="ns")  # wait a bit
+
+    dut.i_enable.value=1
+    await RisingEdge(dut.i_clock)
+
+    # generate 12 bit signed immediates
+    immediates = _generate_ints(0,(1<<5)-1)
+    # generate 31 bit ints as data
+    data = _generate_ints(-((1<<31)-1), ((1<<31)-1))
+
+    for immediate in immediates:
+        for dat in data:
+            dut.i_op_code.value=0b0010011 #op imm
+            dut.i_fun3.value=0b001 #SLLI
+            dut.i_data_s1.value=dat
+            dut.i_data_immediate.value=immediate
+
+            await RisingEdge(dut.i_clock)
+            await RisingEdge(dut.i_clock)
+
+            expected_result = _to_32_bit(dat << immediate)
+            assert dut.o_data_result.value == expected_result
+
+@cocotb.test()
+async def test_IMM_SRLI(dut):
+    cocotb.start_soon(Clock(dut.i_clock, 1, units="ns").start())
+    await Timer(5, units="ns")  # wait a bit
+
+    dut.i_enable.value=1
+    await RisingEdge(dut.i_clock)
+
+    # generate 12 bit signed immediates
+    immediates = _generate_ints(0,(1<<5)-1)
+    # generate 31 bit ints as data
+    data = _generate_ints(-((1<<31)-1), ((1<<31)-1))
+
+    for immediate in immediates:
+        for dat in data:
+            dut.i_op_code.value=0b0010011 #op imm
+            dut.i_fun3.value=0b101 #SRLI
+            dut.i_fun7.value=0b0
+            dut.i_data_s1.value=dat
+            dut.i_data_immediate.value=immediate
+
+            await RisingEdge(dut.i_clock)
+            await RisingEdge(dut.i_clock)
+
+            expected_result = _to_32_bit(_to_32_bit(dat) >> immediate)
+            assert dut.o_data_result.value == expected_result
+
+@cocotb.test()
+async def test_IMM_SRAI_for_positive_data(dut):
+    cocotb.start_soon(Clock(dut.i_clock, 1, units="ns").start())
+    await Timer(5, units="ns")  # wait a bit
+
+    dut.i_enable.value=1
+    await RisingEdge(dut.i_clock)
+
+    # generate 12 bit signed immediates
+    immediates = _generate_ints(0,(1<<5)-1)
+    # generate 31 bit ints as data
+    data = _generate_ints(0, ((1<<31)-1))
+
+    for immediate in immediates:
+        for dat in data:
+            dut.i_op_code.value=0b0010011 #op imm
+            dut.i_fun3.value=0b101 #SRLI
+            dut.i_fun7.value= 1<<5
+            dut.i_data_s1.value=dat
+            dut.i_data_immediate.value=immediate
+
+            await RisingEdge(dut.i_clock)
+            await RisingEdge(dut.i_clock)
+
+            expected_result = _to_32_bit(dat >> immediate)
+            assert dut.o_data_result.value == expected_result
+
+@cocotb.test()
+async def test_IMM_SRAI_for_negative_data(dut):
+    cocotb.start_soon(Clock(dut.i_clock, 1, units="ns").start())
+    await Timer(5, units="ns")  # wait a bit
+
+    dut.i_enable.value=1
+    await RisingEdge(dut.i_clock)
+
+    # generate 12 bit signed immediates
+    immediates = _generate_ints(0,(1<<5)-1)
+    # generate 31 bit ints as data
+    data = _generate_ints(-(1<<31)+1, 0)
+
+    for immediate in immediates:
+        for dat in data:
+            dut.i_op_code.value=0b0010011 #op imm
+            dut.i_fun3.value=0b101 #SRLI
+            dut.i_fun7.value= 1<<5
+            dut.i_data_s1.value=dat
+            dut.i_data_immediate.value=immediate
+
+            await RisingEdge(dut.i_clock)
+            await RisingEdge(dut.i_clock)
+
+            expected_result = _to_32_bit(dat >> immediate)
+            assert dut.o_data_result.value == expected_result
+
+@cocotb.test()
+async def test_LUI(dut):
+    cocotb.start_soon(Clock(dut.i_clock, 1, units="ns").start())
+    await Timer(5, units="ns")  # wait a bit
+
+    dut.i_enable.value=1
+    await RisingEdge(dut.i_clock)
+
+    # generate 20 bit immediates
+    immediates = _generate_ints(0,(1<<20)-1)
+
+    for immediate in immediates:
+        dut.i_op_code.value=0b0110111 #op lui
+        dut.i_data_immediate.value=immediate
+
+        await RisingEdge(dut.i_clock)
+        await RisingEdge(dut.i_clock)
+
+        assert dut.o_data_result.value == (immediate << 12)
+
 def test_alu():
     proj_path = Path(__file__).resolve().parent
     src_path = proj_path.parent.parent / "src"
