@@ -70,7 +70,7 @@ return std_logic_vector is
                 return data or std_logic_vector(ext_imm);
 
             when F3_OPIMM_ANDI =>
-                -- Bitwise XOR with sign extended immediate
+                -- Bitwise AND with sign extended immediate
                 ext_imm := resize(signed(immediate(11 downto 0)), 32);
                 return data and std_logic_vector(ext_imm);
 
@@ -108,6 +108,81 @@ return std_logic_vector is
         return immediate(19 downto 0) & ZERO(11 downto 0);
 end function;
 
+function execute_AUIPC(
+    pc: std_logic_vector(31 downto 0);
+    immediate : std_logic_vector(31 downto 0)
+) 
+return std_logic_vector is 
+    variable offset : unsigned(31 downto 0) ;
+    begin
+        -- place immediate in top 20 bits and fill with 0
+        -- add this offset to address of AUIPC instruction
+        offset := unsigned(immediate(19 downto 0) & ZERO(11 downto 0));
+        return std_logic_vector(unsigned(pc) + offset);
+end function;
+
+function execute_REGREG(
+    data_s1 : std_logic_vector(31 downto 0);
+    data_s2 : std_logic_vector(31 downto 0);
+    fun : std_logic_vector(9 downto 0)
+) 
+return std_logic_vector is 
+    variable result : std_logic_vector(31 downto 0);
+    variable shift : integer;
+    begin
+        case fun(9 downto 0) is
+            when F7_OP_ADD & F3_OP_ADD =>
+                -- performs add, ignores overflow
+                return std_logic_vector(unsigned(data_s1) + unsigned(data_s2));
+            when F7_OP_SUB & F3_OP_SUB =>
+                -- performs add, ignores overflow
+                return std_logic_vector(signed(data_s1) - signed(data_s2));
+            when F7_OP_SLT & F3_OP_SLT =>
+                -- Signed compare if rs1<rs2 then 1, else 0
+                result(31 downto 1) := ZERO(31 downto 1);
+                result(0) := '1' when signed(data_s1) < signed(data_s2) else '0';
+                return result;
+
+            when F7_OP_SLTU & F3_OP_SLTU =>
+                -- unsigned compare if rs1<rs2 then 1, else 0
+                result(31 downto 1) := ZERO(31 downto 1);
+                result(0) := '1' when unsigned(data_s1) < unsigned(data_s2) else '0';
+                return result;
+
+            when F7_OP_OR & F3_OP_OR =>
+                -- bitwise or
+                return data_s1 or data_s2;
+
+            when F7_OP_AND & F3_OP_AND =>
+                -- bitwise and
+                return data_s1 and data_s2;
+
+            when F7_OP_XOR & F3_OP_XOR =>
+                -- bitwise xor
+                return data_s1 xor data_s2;
+
+            when F7_OP_SLL & F3_OP_SLL =>
+                -- leftshift of rs1 by value in lower 5 bits of rs2
+                shift := to_integer(unsigned(data_s1(4 downto 0)));
+                result := std_logic_vector(shift_left(unsigned(data_s1), shift));
+                return result;
+
+            when F7_OP_SRL & F3_OP_SRL =>
+                -- right shift of rs1 by value in lower 5 bits of rs2
+                shift := to_integer(unsigned(data_s1(4 downto 0)));
+                result := std_logic_vector(shift_right(unsigned(data_s1), shift));
+                return result;
+
+            when F7_OP_SRA & F3_OP_SRA =>
+                -- arithmetic right shift of rs1 by value in lower 5 bits of rs2
+                shift := to_integer(unsigned(data_s1(4 downto 0)));
+                result := std_logic_vector(shift_right(signed(data_s1), shift));
+                return result;
+
+            when others =>
+                return ZERO(31 downto 0);
+        end case;
+end function;
 
 begin
     process (i_clock)
@@ -118,6 +193,10 @@ begin
                     o_data_result <= execute_IMM(i_data_s1, i_data_immediate, i_fun3, i_fun7);
                 when OP_LUI => 
                     o_data_result <= execute_LUI(i_data_immediate);
+                when OP_AUIPC =>
+                    o_data_result <= execute_AUIPC(i_program_counter, i_data_immediate);
+                when OP_REGREG =>
+                    o_data_result <= execute_REGREG(i_data_s1, i_data_s2, i_fun7 & i_fun3);
                 when others =>
                     o_data_result <= ZERO(31 downto 0);
             end case;

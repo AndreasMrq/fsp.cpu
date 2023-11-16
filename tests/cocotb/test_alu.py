@@ -334,6 +334,31 @@ async def test_LUI(dut):
 
         assert dut.o_data_result.value == (immediate << 12)
 
+@cocotb.test()
+async def test_AUIPC(dut):
+    cocotb.start_soon(Clock(dut.i_clock, 1, units="ns").start())
+    await Timer(5, units="ns")  # wait a bit
+
+    dut.i_enable.value=1
+    await RisingEdge(dut.i_clock)
+
+    # generate 20 bit immediates
+    immediates = _generate_ints(0,(1<<20)-1)
+    data = _generate_ints(0,(1<<31)-1)
+
+    for immediate in immediates:
+        for dat in data:
+            dut.i_op_code.value=0b0010111 #op auipc
+            dut.i_data_immediate.value=immediate
+            dut.i_program_counter.value = dat
+    
+            await RisingEdge(dut.i_clock)
+            await RisingEdge(dut.i_clock)
+
+            expected_result = _to_32_bit((immediate<<12) + dat)
+            assert dut.o_data_result.value == expected_result
+
+
 def test_alu():
     proj_path = Path(__file__).resolve().parent
     src_path = proj_path.parent.parent / "src"
