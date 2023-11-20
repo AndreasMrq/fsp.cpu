@@ -16,7 +16,8 @@ entity alu is
            i_program_counter : in std_logic_vector(31 downto 0);
            o_data_result : out std_logic_vector(31 downto 0);
            o_should_branch: out std_logic;
-           o_rd_write_enable: out std_logic
+           o_rd_write_enable: out std_logic;
+           o_branch_target: out std_logic_vector(31 downto 0)
        );
 end alu;
 
@@ -163,25 +164,39 @@ return std_logic_vector is
 
             when F7_OP_SLL & F3_OP_SLL =>
                 -- leftshift of rs1 by value in lower 5 bits of rs2
-                shift := to_integer(unsigned(data_s1(4 downto 0)));
+                shift := to_integer(unsigned(data_s2(4 downto 0)));
                 result := std_logic_vector(shift_left(unsigned(data_s1), shift));
                 return result;
 
             when F7_OP_SRL & F3_OP_SRL =>
                 -- right shift of rs1 by value in lower 5 bits of rs2
-                shift := to_integer(unsigned(data_s1(4 downto 0)));
+                shift := to_integer(unsigned(data_s2(4 downto 0)));
                 result := std_logic_vector(shift_right(unsigned(data_s1), shift));
                 return result;
 
             when F7_OP_SRA & F3_OP_SRA =>
                 -- arithmetic right shift of rs1 by value in lower 5 bits of rs2
-                shift := to_integer(unsigned(data_s1(4 downto 0)));
+                shift := to_integer(unsigned(data_s2(4 downto 0)));
                 result := std_logic_vector(shift_right(signed(data_s1), shift));
                 return result;
 
             when others =>
                 return ZERO(31 downto 0);
         end case;
+end function;
+
+function execute_JAL(
+    pc: std_logic_vector(31 downto 0);
+    immediate : std_logic_vector(31 downto 0)
+) 
+return std_logic_vector is 
+    variable offset : signed(31 downto 0) ;
+    begin
+        -- Sign extend 20 bit immediate, add to address of jump
+        -- instruction
+        -- This returns the branch target
+        offset := signed(immediate(19 downto 0));
+        return std_logic_vector(signed(pc) + offset);
 end function;
 
 begin
@@ -197,6 +212,10 @@ begin
                     o_data_result <= execute_AUIPC(i_program_counter, i_data_immediate);
                 when OP_REGREG =>
                     o_data_result <= execute_REGREG(i_data_s1, i_data_s2, i_fun7 & i_fun3);
+                when OP_JAL =>
+                    o_branch_target <= execute_JAL(i_program_counter, i_data_immediate);
+                    o_data_result <= std_logic_vector(signed(i_program_counter) + 4);
+                    o_should_branch <= '1';
                 when others =>
                     o_data_result <= ZERO(31 downto 0);
             end case;
