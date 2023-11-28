@@ -7,9 +7,9 @@ from cocotb.clock import Clock
 from hypothesis.strategies import integers, lists, data
 
 def _generate_ints(min:Optional[int],
-                           max:Optional[int]) -> List[int]:
+                           max:Optional[int], max_numbers=100) -> List[int]:
     integer_strat =integers(min_value=min, max_value=max)
-    list_strat = lists(integer_strat,min_size=10,max_size=100)
+    list_strat = lists(integer_strat,min_size=10,max_size=max_numbers)
     return list_strat.example()
 
 def _to_32_bit(value:int):
@@ -615,6 +615,258 @@ async def test_REGREG_SRA(dut):
 
             expected_result = _to_32_bit(s1>>s2)
             assert bin(dut.o_data_result.value) == bin(expected_result)
+
+@cocotb.test()
+async def test_JAL(dut):
+    cocotb.start_soon(Clock(dut.i_clock, 1, units="ns").start())
+    await Timer(5, units="ns")  # wait a bit
+
+    dut.i_enable.value=1
+    await RisingEdge(dut.i_clock)
+
+    # generate 31 bit ints as data
+    program_counter = _generate_ints(0, (1<<31)-1)
+    immediates = _generate_ints(-(1<<19)+1, (1<<19)-1)
+
+    for pc in program_counter:
+        for immediate in immediates:
+            dut.i_op_code.value=0b1101111 #op JAL
+            dut.i_program_counter.value=pc
+            dut.i_data_immediate.value=immediate
+
+            await RisingEdge(dut.i_clock)
+            await RisingEdge(dut.i_clock)
+
+            assert dut.o_data_result.value == pc + 4
+            assert dut.o_should_branch.value == 1
+            assert dut.o_branch_target.value == _to_32_bit(pc+immediate)
+
+@cocotb.test()
+async def test_JALR(dut):
+    cocotb.start_soon(Clock(dut.i_clock, 1, units="ns").start())
+    await Timer(5, units="ns")  # wait a bit
+
+    dut.i_enable.value=1
+    await RisingEdge(dut.i_clock)
+
+    # generate 31 bit ints as data and pc
+    program_counter = _generate_ints(0, (1<<31)-1)
+    data_s1 = _generate_ints(0, (1<<31)-1)
+    immediates = _generate_ints(-(1<<11)+1, (1<<11)-1)
+
+    for pc in program_counter:
+        for immediate in immediates:
+            for data in data_s1:
+                dut.i_op_code.value=0b1100111 #op JALR
+                dut.i_program_counter.value=pc
+                dut.i_data_s1.value=data
+                dut.i_data_immediate.value=immediate
+    
+                await RisingEdge(dut.i_clock)
+                await RisingEdge(dut.i_clock)
+    
+                assert dut.o_data_result.value == pc + 4
+                assert dut.o_should_branch.value == 1
+                expected_result = _to_32_bit(data+immediate) & 0xFFFFFFFE
+                assert dut.o_branch_target.value == expected_result
+
+@cocotb.test()
+async def test_BRANCH_BEQ(dut):
+    cocotb.start_soon(Clock(dut.i_clock, 1, units="ns").start())
+    await Timer(5, units="ns")  # wait a bit
+
+    dut.i_enable.value=1
+    await RisingEdge(dut.i_clock)
+
+    # generate 31 bit ints as data and pc
+    program_counter = _generate_ints(0, (1<<31)-1, max_numbers=10 )
+    data = _generate_ints(-(1<<31)+1, (1<<31)-1, max_numbers=10)
+    immediates = _generate_ints(-(1<<11)+1, (1<<11)-1, max_numbers=10)
+
+    for pc in program_counter:
+        for immediate in immediates:
+            for data1 in data:
+                for data2 in data:
+                    dut.i_op_code.value=0b1100011 #op BRANCH
+                    dut.i_fun3.value=0b000 #op BEQ
+                    dut.i_program_counter.value=pc
+                    dut.i_data_s1.value=data1
+                    dut.i_data_s2.value=data2
+                    dut.i_data_immediate.value=immediate
+        
+                    await RisingEdge(dut.i_clock)
+                    await RisingEdge(dut.i_clock)
+        
+                    should_branch = data1 == data2
+                    target = _to_32_bit(pc + immediate)
+                    assert dut.o_should_branch.value == should_branch
+                    if should_branch:
+                        assert dut.o_branch_target.value == target
+
+@cocotb.test()
+async def test_BRANCH_BNE(dut):
+    cocotb.start_soon(Clock(dut.i_clock, 1, units="ns").start())
+    await Timer(5, units="ns")  # wait a bit
+
+    dut.i_enable.value=1
+    await RisingEdge(dut.i_clock)
+
+    # generate 31 bit ints as data and pc
+    program_counter = _generate_ints(0, (1<<31)-1, max_numbers=10 )
+    data = _generate_ints(-(1<<31)+1, (1<<31)-1, max_numbers=10)
+    immediates = _generate_ints(-(1<<11)+1, (1<<11)-1, max_numbers=10)
+
+    for pc in program_counter:
+        for immediate in immediates:
+            for data1 in data:
+                for data2 in data:
+                    dut.i_op_code.value=0b1100011 #op BRANCH
+                    dut.i_fun3.value=0b001 #op BNE
+                    dut.i_program_counter.value=pc
+                    dut.i_data_s1.value=data1
+                    dut.i_data_s2.value=data2
+                    dut.i_data_immediate.value=immediate
+        
+                    await RisingEdge(dut.i_clock)
+                    await RisingEdge(dut.i_clock)
+        
+                    should_branch = data1 != data2
+                    target = _to_32_bit(pc + immediate)
+                    assert dut.o_should_branch.value == should_branch
+                    if should_branch:
+                        assert dut.o_branch_target.value == target
+
+@cocotb.test()
+async def test_BRANCH_BLT(dut):
+    cocotb.start_soon(Clock(dut.i_clock, 1, units="ns").start())
+    await Timer(5, units="ns")  # wait a bit
+
+    dut.i_enable.value=1
+    await RisingEdge(dut.i_clock)
+
+    # generate 31 bit ints as data and pc
+    program_counter = _generate_ints(0, (1<<31)-1, max_numbers=10 )
+    data = _generate_ints(-(1<<31)+1, (1<<31)-1, max_numbers=10)
+    immediates = _generate_ints(-(1<<11)+1, (1<<11)-1, max_numbers=10)
+
+    for pc in program_counter:
+        for immediate in immediates:
+            for data1 in data:
+                for data2 in data:
+                    dut.i_op_code.value=0b1100011 #op BRANCH
+                    dut.i_fun3.value=0b100 #op BLT
+                    dut.i_program_counter.value=pc
+                    dut.i_data_s1.value=data1
+                    dut.i_data_s2.value=data2
+                    dut.i_data_immediate.value=immediate
+        
+                    await RisingEdge(dut.i_clock)
+                    await RisingEdge(dut.i_clock)
+        
+                    should_branch = data1 < data2
+                    target = _to_32_bit(pc + immediate)
+                    assert dut.o_should_branch.value == should_branch
+                    if should_branch:
+                        assert dut.o_branch_target.value == target
+
+@cocotb.test()
+async def test_BRANCH_BGE(dut):
+    cocotb.start_soon(Clock(dut.i_clock, 1, units="ns").start())
+    await Timer(5, units="ns")  # wait a bit
+
+    dut.i_enable.value=1
+    await RisingEdge(dut.i_clock)
+
+    # generate 31 bit ints as data and pc
+    program_counter = _generate_ints(0, (1<<31)-1, max_numbers=10 )
+    data = _generate_ints(-(1<<31)+1, (1<<31)-1, max_numbers=10)
+    immediates = _generate_ints(-(1<<11)+1, (1<<11)-1, max_numbers=10)
+
+    for pc in program_counter:
+        for immediate in immediates:
+            for data1 in data:
+                for data2 in data:
+                    dut.i_op_code.value=0b1100011 #op BRANCH
+                    dut.i_fun3.value=0b101 #op BLT
+                    dut.i_program_counter.value=pc
+                    dut.i_data_s1.value=data1
+                    dut.i_data_s2.value=data2
+                    dut.i_data_immediate.value=immediate
+        
+                    await RisingEdge(dut.i_clock)
+                    await RisingEdge(dut.i_clock)
+        
+                    should_branch = data1 >= data2
+                    target = _to_32_bit(pc + immediate)
+                    assert dut.o_should_branch.value == should_branch
+                    if should_branch:
+                        assert dut.o_branch_target.value == target
+
+@cocotb.test()
+async def test_BRANCH_BLTU(dut):
+    cocotb.start_soon(Clock(dut.i_clock, 1, units="ns").start())
+    await Timer(5, units="ns")  # wait a bit
+
+    dut.i_enable.value=1
+    await RisingEdge(dut.i_clock)
+
+    # generate 31 bit ints as data and pc
+    program_counter = _generate_ints(0, (1<<31)-1, max_numbers=10 )
+    data = _generate_ints(-(1<<31)+1, (1<<31)-1, max_numbers=10)
+    immediates = _generate_ints(-(1<<11)+1, (1<<11)-1, max_numbers=10)
+
+    for pc in program_counter:
+        for immediate in immediates:
+            for data1 in data:
+                for data2 in data:
+                    dut.i_op_code.value=0b1100011 #op BRANCH
+                    dut.i_fun3.value=0b110 #op BLT
+                    dut.i_program_counter.value=pc
+                    dut.i_data_s1.value=data1
+                    dut.i_data_s2.value=data2
+                    dut.i_data_immediate.value=immediate
+        
+                    await RisingEdge(dut.i_clock)
+                    await RisingEdge(dut.i_clock)
+        
+                    should_branch = _to_32_bit_unsigned(data1) < _to_32_bit_unsigned(data2)
+                    target = _to_32_bit(pc + immediate)
+                    assert dut.o_should_branch.value == should_branch
+                    if should_branch:
+                        assert dut.o_branch_target.value == target
+
+@cocotb.test()
+async def test_BRANCH_BGEU(dut):
+    cocotb.start_soon(Clock(dut.i_clock, 1, units="ns").start())
+    await Timer(5, units="ns")  # wait a bit
+
+    dut.i_enable.value=1
+    await RisingEdge(dut.i_clock)
+
+    # generate 31 bit ints as data and pc
+    program_counter = _generate_ints(0, (1<<31)-1, max_numbers=10 )
+    data = _generate_ints(-(1<<31)+1, (1<<31)-1, max_numbers=10)
+    immediates = _generate_ints(-(1<<11)+1, (1<<11)-1, max_numbers=10)
+
+    for pc in program_counter:
+        for immediate in immediates:
+            for data1 in data:
+                for data2 in data:
+                    dut.i_op_code.value=0b1100011 #op BRANCH
+                    dut.i_fun3.value=0b111 #op BLT
+                    dut.i_program_counter.value=pc
+                    dut.i_data_s1.value=data1
+                    dut.i_data_s2.value=data2
+                    dut.i_data_immediate.value=immediate
+        
+                    await RisingEdge(dut.i_clock)
+                    await RisingEdge(dut.i_clock)
+        
+                    should_branch = _to_32_bit_unsigned(data1) >= _to_32_bit_unsigned(data2)
+                    target = _to_32_bit(pc + immediate)
+                    assert dut.o_should_branch.value == should_branch
+                    if should_branch:
+                        assert dut.o_branch_target.value == target
 
 def test_alu():
     proj_path = Path(__file__).resolve().parent

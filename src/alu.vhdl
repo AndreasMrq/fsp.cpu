@@ -187,17 +187,63 @@ end function;
 
 function execute_JAL(
     pc: std_logic_vector(31 downto 0);
-    immediate : std_logic_vector(31 downto 0)
+    immediate : std_logic_vector(19 downto 0)
 ) 
 return std_logic_vector is 
-    variable offset : signed(31 downto 0) ;
+    variable offset : signed(19 downto 0);
     begin
         -- Sign extend 20 bit immediate, add to address of jump
         -- instruction
         -- This returns the branch target
-        offset := signed(immediate(19 downto 0));
+        offset := signed(immediate);
         return std_logic_vector(signed(pc) + offset);
 end function;
+
+function execute_JALR(
+    data: std_logic_vector(31 downto 0);
+    immediate : std_logic_vector(11 downto 0)
+) 
+return std_logic_vector is 
+    variable result : std_logic_vector(31 downto 0);
+    begin
+        -- Sign extend 12 bit immediate, add to data_s1
+        -- then set lsb to 0.
+        -- This returns the branch target
+        result := std_logic_vector(signed(data) + signed(immediate));
+        return result(31 downto 1) & ZERO(0);
+end function;
+
+procedure execute_BRANCH(
+    signal data_s1 : in std_logic_vector(31 downto 0);
+    signal data_s2 : in std_logic_vector(31 downto 0);
+    signal immediate: in std_logic_vector(11 downto 0);
+    signal fun3: in std_logic_vector(2 downto 0);
+    signal program_counter : in std_logic_vector(31 downto 0);
+    signal target : out std_logic_vector(31 downto 0);
+    signal should_branch : out std_logic
+)
+is 
+begin
+    target <= std_logic_vector(signed(program_counter) + signed(immediate));
+
+    case fun3 is
+        when F3_BRANCH_BEQ =>
+            should_branch <= '1' when data_s1=data_s2 else '0';
+        when F3_BRANCH_BNE =>
+            should_branch <= '1' when data_s1/=data_s2 else '0';
+        when F3_BRANCH_BLT =>
+            should_branch <= '1' when signed(data_s1)<signed(data_s2) else '0';
+        when F3_BRANCH_BGE =>
+            should_branch <= '1' when signed(data_s1)>=signed(data_s2) else '0';
+        when F3_BRANCH_BLTU =>
+            should_branch <= '1' when unsigned(data_s1)<unsigned(data_s2) else '0';
+        when F3_BRANCH_BGEU =>
+            should_branch <= '1' when unsigned(data_s1)>=unsigned(data_s2) else '0';
+        when others =>
+            should_branch <= '0';
+    end case;
+end procedure;
+
 
 begin
     process (i_clock)
@@ -213,9 +259,23 @@ begin
                 when OP_REGREG =>
                     o_data_result <= execute_REGREG(i_data_s1, i_data_s2, i_fun7 & i_fun3);
                 when OP_JAL =>
-                    o_branch_target <= execute_JAL(i_program_counter, i_data_immediate);
+                    o_branch_target <= execute_JAL(i_program_counter, i_data_immediate(19 downto 0));
                     o_data_result <= std_logic_vector(signed(i_program_counter) + 4);
                     o_should_branch <= '1';
+                when OP_JALR =>
+                    o_branch_target <= execute_JALR(i_data_s1, i_data_immediate(11 downto 0));
+                    o_data_result <= std_logic_vector(signed(i_program_counter) + 4);
+                    o_should_branch <= '1';
+                when OP_BRANCH =>
+                    execute_BRANCH(
+                        i_data_s1,
+                        i_data_s2,
+                        i_data_immediate(11 downto 0),
+                        i_fun3,
+                        i_program_counter,
+                        o_branch_target,
+                        o_should_branch
+                    );
                 when others =>
                     o_data_result <= ZERO(31 downto 0);
             end case;
