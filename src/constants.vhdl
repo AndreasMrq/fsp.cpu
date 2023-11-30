@@ -49,6 +49,12 @@ package constants is
 	constant OP_ENV : std_logic_vector (6 downto 0) := "1110011";
 
 
+    -- PC OP Codes
+    constant PCU_OP_NOP: std_logic_vector(1 downto 0):= "00";
+    constant PCU_OP_INC: std_logic_vector(1 downto 0):= "01";
+    constant PCU_OP_ASSIGN: std_logic_vector(1 downto 0):= "10";
+    constant PCU_OP_RESET: std_logic_vector(1 downto 0):= "11";
+
 	-- Flags
 	constant F3_BRANCH_BEQ: std_logic_vector(2 downto 0) := "000";
 	constant F3_BRANCH_BNE: std_logic_vector(2 downto 0) := "001";
