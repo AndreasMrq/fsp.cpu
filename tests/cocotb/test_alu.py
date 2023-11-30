@@ -1,6 +1,7 @@
 from typing import List, Optional
 from pathlib import Path
 import cocotb
+from utility import to_32_bit, to_32_bit_unsigned
 from cocotb.runner import get_runner
 from cocotb.triggers import FallingEdge, Timer, RisingEdge
 from cocotb.clock import Clock
@@ -12,19 +13,19 @@ def _generate_ints(min:Optional[int],
     list_strat = lists(integer_strat,min_size=10,max_size=max_numbers)
     return list_strat.example()
 
-def _to_32_bit(value:int):
-    return value & 0xffffffff
 
-def _to_32_bit_unsigned(value:int):
-    return (value & 0xffffffff) + (1<<32)
-
-@cocotb.test()
-async def test_IMM_ADDI(dut):
+async def _enable_and_wait(dut):
     cocotb.start_soon(Clock(dut.i_clock, 1, units="ns").start())
     await Timer(5, units="ns")  # wait a bit
 
     dut.i_enable.value=1
     await RisingEdge(dut.i_clock)
+
+
+
+@cocotb.test()
+async def test_IMM_ADDI(dut):
+    await _enable_and_wait(dut)
 
     # generate 12 bit signed immediates
     immediates = _generate_ints(-((1<<11)-1), ((1<<11)-1))
@@ -41,16 +42,12 @@ async def test_IMM_ADDI(dut):
             await RisingEdge(dut.i_clock)
             await RisingEdge(dut.i_clock)
 
-            expected_result = _to_32_bit(immediate + dat)
+            expected_result = to_32_bit(immediate + dat)
             assert bin(dut.o_data_result.value) == bin(expected_result)
 
 @cocotb.test()
 async def test_IMM_SLTI(dut):
-    cocotb.start_soon(Clock(dut.i_clock, 1, units="ns").start())
-    await Timer(5, units="ns")  # wait a bit
-
-    dut.i_enable.value=1
-    await RisingEdge(dut.i_clock)
+    await _enable_and_wait(dut)
 
     # generate 12 bit signed immediates
     immediates = _generate_ints(-((1<<11)-1), ((1<<11)-1))
@@ -72,11 +69,7 @@ async def test_IMM_SLTI(dut):
 
 @cocotb.test()
 async def test_IMM_SLTIU_positive_immediate(dut):
-    cocotb.start_soon(Clock(dut.i_clock, 1, units="ns").start())
-    await Timer(5, units="ns")  # wait a bit
-
-    dut.i_enable.value=1
-    await RisingEdge(dut.i_clock)
+    await _enable_and_wait(dut)
 
     # generate 12 bit signed immediates
     immediates = _generate_ints(0, ((1<<11)-1))
@@ -98,11 +91,7 @@ async def test_IMM_SLTIU_positive_immediate(dut):
 
 @cocotb.test()
 async def test_IMM_SLTIU_negative_immediate(dut):
-    cocotb.start_soon(Clock(dut.i_clock, 1, units="ns").start())
-    await Timer(5, units="ns")  # wait a bit
-
-    dut.i_enable.value=1
-    await RisingEdge(dut.i_clock)
+    await _enable_and_wait(dut)
 
     # generate 12 bit signed immediates
     immediates = _generate_ints(-((1<<11)-1),-1)
@@ -119,17 +108,13 @@ async def test_IMM_SLTIU_negative_immediate(dut):
             await RisingEdge(dut.i_clock)
             await RisingEdge(dut.i_clock)
 
-            extended_imm = _to_32_bit_unsigned(immediate)
+            extended_imm = to_32_bit_unsigned(immediate)
             expected_result = 1 if dat<extended_imm else 0
             assert dut.o_data_result.value == expected_result
 
 @cocotb.test()
 async def test_IMM_XORI(dut):
-    cocotb.start_soon(Clock(dut.i_clock, 1, units="ns").start())
-    await Timer(5, units="ns")  # wait a bit
-
-    dut.i_enable.value=1
-    await RisingEdge(dut.i_clock)
+    await _enable_and_wait(dut)
 
     # generate 12 bit signed immediates
     immediates = _generate_ints(-((1<<11)-1),-1)
@@ -146,18 +131,14 @@ async def test_IMM_XORI(dut):
             await RisingEdge(dut.i_clock)
             await RisingEdge(dut.i_clock)
 
-            extended_imm = _to_32_bit(immediate)
-            dat32 = _to_32_bit(dat)
+            extended_imm = to_32_bit(immediate)
+            dat32 = to_32_bit(dat)
             expected_result = extended_imm ^ dat32
             assert dut.o_data_result.value == expected_result
 
 @cocotb.test()
 async def test_IMM_ORI(dut):
-    cocotb.start_soon(Clock(dut.i_clock, 1, units="ns").start())
-    await Timer(5, units="ns")  # wait a bit
-
-    dut.i_enable.value=1
-    await RisingEdge(dut.i_clock)
+    await _enable_and_wait(dut)
 
     # generate 12 bit signed immediates
     immediates = _generate_ints(-((1<<11)-1),-1)
@@ -174,18 +155,14 @@ async def test_IMM_ORI(dut):
             await RisingEdge(dut.i_clock)
             await RisingEdge(dut.i_clock)
 
-            extended_imm = _to_32_bit(immediate)
-            dat32 = _to_32_bit(dat)
+            extended_imm = to_32_bit(immediate)
+            dat32 = to_32_bit(dat)
             expected_result = extended_imm | dat32
             assert dut.o_data_result.value == expected_result
 
 @cocotb.test()
 async def test_IMM_ANDI(dut):
-    cocotb.start_soon(Clock(dut.i_clock, 1, units="ns").start())
-    await Timer(5, units="ns")  # wait a bit
-
-    dut.i_enable.value=1
-    await RisingEdge(dut.i_clock)
+    await _enable_and_wait(dut)
 
     # generate 12 bit signed immediates
     immediates = _generate_ints(-((1<<11)-1),-1)
@@ -202,18 +179,14 @@ async def test_IMM_ANDI(dut):
             await RisingEdge(dut.i_clock)
             await RisingEdge(dut.i_clock)
 
-            extended_imm = _to_32_bit(immediate)
-            dat32 = _to_32_bit(dat)
+            extended_imm = to_32_bit(immediate)
+            dat32 = to_32_bit(dat)
             expected_result = extended_imm & dat32
             assert dut.o_data_result.value == expected_result
 
 @cocotb.test()
 async def test_IMM_SLLI(dut):
-    cocotb.start_soon(Clock(dut.i_clock, 1, units="ns").start())
-    await Timer(5, units="ns")  # wait a bit
-
-    dut.i_enable.value=1
-    await RisingEdge(dut.i_clock)
+    await _enable_and_wait(dut)
 
     # generate 12 bit signed immediates
     immediates = _generate_ints(0,(1<<5)-1)
@@ -230,16 +203,12 @@ async def test_IMM_SLLI(dut):
             await RisingEdge(dut.i_clock)
             await RisingEdge(dut.i_clock)
 
-            expected_result = _to_32_bit(dat << immediate)
+            expected_result = to_32_bit(dat << immediate)
             assert dut.o_data_result.value == expected_result
 
 @cocotb.test()
 async def test_IMM_SRLI(dut):
-    cocotb.start_soon(Clock(dut.i_clock, 1, units="ns").start())
-    await Timer(5, units="ns")  # wait a bit
-
-    dut.i_enable.value=1
-    await RisingEdge(dut.i_clock)
+    await _enable_and_wait(dut)
 
     # generate 12 bit signed immediates
     immediates = _generate_ints(0,(1<<5)-1)
@@ -257,16 +226,12 @@ async def test_IMM_SRLI(dut):
             await RisingEdge(dut.i_clock)
             await RisingEdge(dut.i_clock)
 
-            expected_result = _to_32_bit(_to_32_bit(dat) >> immediate)
+            expected_result = to_32_bit(to_32_bit(dat) >> immediate)
             assert dut.o_data_result.value == expected_result
 
 @cocotb.test()
 async def test_IMM_SRAI_for_positive_data(dut):
-    cocotb.start_soon(Clock(dut.i_clock, 1, units="ns").start())
-    await Timer(5, units="ns")  # wait a bit
-
-    dut.i_enable.value=1
-    await RisingEdge(dut.i_clock)
+    await _enable_and_wait(dut)
 
     # generate 12 bit signed immediates
     immediates = _generate_ints(0,(1<<5)-1)
@@ -284,16 +249,12 @@ async def test_IMM_SRAI_for_positive_data(dut):
             await RisingEdge(dut.i_clock)
             await RisingEdge(dut.i_clock)
 
-            expected_result = _to_32_bit(dat >> immediate)
+            expected_result = to_32_bit(dat >> immediate)
             assert dut.o_data_result.value == expected_result
 
 @cocotb.test()
 async def test_IMM_SRAI_for_negative_data(dut):
-    cocotb.start_soon(Clock(dut.i_clock, 1, units="ns").start())
-    await Timer(5, units="ns")  # wait a bit
-
-    dut.i_enable.value=1
-    await RisingEdge(dut.i_clock)
+    await _enable_and_wait(dut)
 
     # generate 12 bit signed immediates
     immediates = _generate_ints(0,(1<<5)-1)
@@ -311,16 +272,12 @@ async def test_IMM_SRAI_for_negative_data(dut):
             await RisingEdge(dut.i_clock)
             await RisingEdge(dut.i_clock)
 
-            expected_result = _to_32_bit(dat >> immediate)
+            expected_result = to_32_bit(dat >> immediate)
             assert dut.o_data_result.value == expected_result
 
 @cocotb.test()
 async def test_LUI(dut):
-    cocotb.start_soon(Clock(dut.i_clock, 1, units="ns").start())
-    await Timer(5, units="ns")  # wait a bit
-
-    dut.i_enable.value=1
-    await RisingEdge(dut.i_clock)
+    await _enable_and_wait(dut)
 
     # generate 20 bit immediates
     immediates = _generate_ints(0,(1<<20)-1)
@@ -336,11 +293,7 @@ async def test_LUI(dut):
 
 @cocotb.test()
 async def test_AUIPC(dut):
-    cocotb.start_soon(Clock(dut.i_clock, 1, units="ns").start())
-    await Timer(5, units="ns")  # wait a bit
-
-    dut.i_enable.value=1
-    await RisingEdge(dut.i_clock)
+    await _enable_and_wait(dut)
 
     # generate 20 bit immediates
     immediates = _generate_ints(0,(1<<20)-1)
@@ -355,17 +308,13 @@ async def test_AUIPC(dut):
             await RisingEdge(dut.i_clock)
             await RisingEdge(dut.i_clock)
 
-            expected_result = _to_32_bit((immediate<<12) + dat)
+            expected_result = to_32_bit((immediate<<12) + dat)
             assert dut.o_data_result.value == expected_result
 
 
 @cocotb.test()
 async def test_REGREG_ADD(dut):
-    cocotb.start_soon(Clock(dut.i_clock, 1, units="ns").start())
-    await Timer(5, units="ns")  # wait a bit
-
-    dut.i_enable.value=1
-    await RisingEdge(dut.i_clock)
+    await _enable_and_wait(dut)
 
     # generate 31 bit ints as data
     data_s1 = _generate_ints(-((1<<30)-1), ((1<<30)-1))
@@ -382,16 +331,12 @@ async def test_REGREG_ADD(dut):
             await RisingEdge(dut.i_clock)
             await RisingEdge(dut.i_clock)
 
-            expected_result = _to_32_bit(s1+s2)
+            expected_result = to_32_bit(s1+s2)
             assert bin(dut.o_data_result.value) == bin(expected_result)
 
 @cocotb.test()
 async def test_REGREG_SUB(dut):
-    cocotb.start_soon(Clock(dut.i_clock, 1, units="ns").start())
-    await Timer(5, units="ns")  # wait a bit
-
-    dut.i_enable.value=1
-    await RisingEdge(dut.i_clock)
+    await _enable_and_wait(dut)
 
     # generate 31 bit ints as data
     data_s1 = _generate_ints(-((1<<30)-1), ((1<<30)-1))
@@ -408,16 +353,12 @@ async def test_REGREG_SUB(dut):
             await RisingEdge(dut.i_clock)
             await RisingEdge(dut.i_clock)
 
-            expected_result = _to_32_bit(s1-s2)
+            expected_result = to_32_bit(s1-s2)
             assert bin(dut.o_data_result.value) == bin(expected_result)
             
 @cocotb.test()
 async def test_REGREG_SLT(dut):
-    cocotb.start_soon(Clock(dut.i_clock, 1, units="ns").start())
-    await Timer(5, units="ns")  # wait a bit
-
-    dut.i_enable.value=1
-    await RisingEdge(dut.i_clock)
+    await _enable_and_wait(dut)
 
     data_s1 = _generate_ints(-((1<<30)-1), ((1<<30)-1))
     data_s2 = _generate_ints(-((1<<30)-1), ((1<<30)-1))
@@ -438,11 +379,7 @@ async def test_REGREG_SLT(dut):
 
 @cocotb.test()
 async def test_REGREG_SLTU(dut):
-    cocotb.start_soon(Clock(dut.i_clock, 1, units="ns").start())
-    await Timer(5, units="ns")  # wait a bit
-
-    dut.i_enable.value=1
-    await RisingEdge(dut.i_clock)
+    await _enable_and_wait(dut)
 
     data_s1 = _generate_ints(0, ((1<<32)-1))
     data_s2 = _generate_ints(0, ((1<<32)-1))
@@ -464,11 +401,7 @@ async def test_REGREG_SLTU(dut):
 
 @cocotb.test()
 async def test_REGREG_OR(dut):
-    cocotb.start_soon(Clock(dut.i_clock, 1, units="ns").start())
-    await Timer(5, units="ns")  # wait a bit
-
-    dut.i_enable.value=1
-    await RisingEdge(dut.i_clock)
+    await _enable_and_wait(dut)
 
     data_s1 = _generate_ints(0, ((1<<32)-1))
     data_s2 = _generate_ints(0, ((1<<32)-1))
@@ -489,11 +422,7 @@ async def test_REGREG_OR(dut):
 
 @cocotb.test()
 async def test_REGREG_AND(dut):
-    cocotb.start_soon(Clock(dut.i_clock, 1, units="ns").start())
-    await Timer(5, units="ns")  # wait a bit
-
-    dut.i_enable.value=1
-    await RisingEdge(dut.i_clock)
+    await _enable_and_wait(dut)
 
     data_s1 = _generate_ints(0, ((1<<32)-1))
     data_s2 = _generate_ints(0, ((1<<32)-1))
@@ -515,11 +444,7 @@ async def test_REGREG_AND(dut):
 
 @cocotb.test()
 async def test_REGREG_XOR(dut):
-    cocotb.start_soon(Clock(dut.i_clock, 1, units="ns").start())
-    await Timer(5, units="ns")  # wait a bit
-
-    dut.i_enable.value=1
-    await RisingEdge(dut.i_clock)
+    await _enable_and_wait(dut)
 
     data_s1 = _generate_ints(0, ((1<<32)-1))
     data_s2 = _generate_ints(0, ((1<<32)-1))
@@ -540,11 +465,7 @@ async def test_REGREG_XOR(dut):
 
 @cocotb.test()
 async def test_REGREG_SLL(dut):
-    cocotb.start_soon(Clock(dut.i_clock, 1, units="ns").start())
-    await Timer(5, units="ns")  # wait a bit
-
-    dut.i_enable.value=1
-    await RisingEdge(dut.i_clock)
+    await _enable_and_wait(dut)
 
     # generate 31 bit ints as data
     data_s1 = _generate_ints(-((1<<30)-1), ((1<<30)-1))
@@ -561,16 +482,12 @@ async def test_REGREG_SLL(dut):
             await RisingEdge(dut.i_clock)
             await RisingEdge(dut.i_clock)
 
-            expected_result = _to_32_bit(s1<<s2)
+            expected_result = to_32_bit(s1<<s2)
             assert dut.o_data_result.value == expected_result
 
 @cocotb.test()
 async def test_REGREG_SRL(dut):
-    cocotb.start_soon(Clock(dut.i_clock, 1, units="ns").start())
-    await Timer(5, units="ns")  # wait a bit
-
-    dut.i_enable.value=1
-    await RisingEdge(dut.i_clock)
+    await _enable_and_wait(dut)
 
     # generate 31 bit ints as data
     data_s1 = _generate_ints(-((1<<30)-1), ((1<<30)-1))
@@ -587,16 +504,12 @@ async def test_REGREG_SRL(dut):
             await RisingEdge(dut.i_clock)
             await RisingEdge(dut.i_clock)
 
-            expected_result = _to_32_bit((_to_32_bit(s1))>>s2)
+            expected_result = to_32_bit((to_32_bit(s1))>>s2)
             assert bin(dut.o_data_result.value) == bin(expected_result)
 
 @cocotb.test()
 async def test_REGREG_SRA(dut):
-    cocotb.start_soon(Clock(dut.i_clock, 1, units="ns").start())
-    await Timer(5, units="ns")  # wait a bit
-
-    dut.i_enable.value=1
-    await RisingEdge(dut.i_clock)
+    await _enable_and_wait(dut)
 
     # generate 31 bit ints as data
     data_s1 = _generate_ints(-((1<<30)-1), ((1<<30)-1))
@@ -613,16 +526,12 @@ async def test_REGREG_SRA(dut):
             await RisingEdge(dut.i_clock)
             await RisingEdge(dut.i_clock)
 
-            expected_result = _to_32_bit(s1>>s2)
+            expected_result = to_32_bit(s1>>s2)
             assert bin(dut.o_data_result.value) == bin(expected_result)
 
 @cocotb.test()
 async def test_JAL(dut):
-    cocotb.start_soon(Clock(dut.i_clock, 1, units="ns").start())
-    await Timer(5, units="ns")  # wait a bit
-
-    dut.i_enable.value=1
-    await RisingEdge(dut.i_clock)
+    await _enable_and_wait(dut)
 
     # generate 31 bit ints as data
     program_counter = _generate_ints(0, (1<<31)-1)
@@ -639,15 +548,11 @@ async def test_JAL(dut):
 
             assert dut.o_data_result.value == pc + 4
             assert dut.o_should_branch.value == 1
-            assert dut.o_branch_target.value == _to_32_bit(pc+immediate)
+            assert dut.o_branch_target.value == to_32_bit(pc+immediate)
 
 @cocotb.test()
 async def test_JALR(dut):
-    cocotb.start_soon(Clock(dut.i_clock, 1, units="ns").start())
-    await Timer(5, units="ns")  # wait a bit
-
-    dut.i_enable.value=1
-    await RisingEdge(dut.i_clock)
+    await _enable_and_wait(dut)
 
     # generate 31 bit ints as data and pc
     program_counter = _generate_ints(0, (1<<31)-1)
@@ -667,16 +572,12 @@ async def test_JALR(dut):
     
                 assert dut.o_data_result.value == pc + 4
                 assert dut.o_should_branch.value == 1
-                expected_result = _to_32_bit(data+immediate) & 0xFFFFFFFE
+                expected_result = to_32_bit(data+immediate) & 0xFFFFFFFE
                 assert dut.o_branch_target.value == expected_result
 
 @cocotb.test()
 async def test_BRANCH_BEQ(dut):
-    cocotb.start_soon(Clock(dut.i_clock, 1, units="ns").start())
-    await Timer(5, units="ns")  # wait a bit
-
-    dut.i_enable.value=1
-    await RisingEdge(dut.i_clock)
+    await _enable_and_wait(dut)
 
     # generate 31 bit ints as data and pc
     program_counter = _generate_ints(0, (1<<31)-1, max_numbers=10 )
@@ -698,18 +599,14 @@ async def test_BRANCH_BEQ(dut):
                     await RisingEdge(dut.i_clock)
         
                     should_branch = data1 == data2
-                    target = _to_32_bit(pc + immediate)
+                    target = to_32_bit(pc + immediate)
                     assert dut.o_should_branch.value == should_branch
                     if should_branch:
                         assert dut.o_branch_target.value == target
 
 @cocotb.test()
 async def test_BRANCH_BNE(dut):
-    cocotb.start_soon(Clock(dut.i_clock, 1, units="ns").start())
-    await Timer(5, units="ns")  # wait a bit
-
-    dut.i_enable.value=1
-    await RisingEdge(dut.i_clock)
+    await _enable_and_wait(dut)
 
     # generate 31 bit ints as data and pc
     program_counter = _generate_ints(0, (1<<31)-1, max_numbers=10 )
@@ -731,18 +628,14 @@ async def test_BRANCH_BNE(dut):
                     await RisingEdge(dut.i_clock)
         
                     should_branch = data1 != data2
-                    target = _to_32_bit(pc + immediate)
+                    target = to_32_bit(pc + immediate)
                     assert dut.o_should_branch.value == should_branch
                     if should_branch:
                         assert dut.o_branch_target.value == target
 
 @cocotb.test()
 async def test_BRANCH_BLT(dut):
-    cocotb.start_soon(Clock(dut.i_clock, 1, units="ns").start())
-    await Timer(5, units="ns")  # wait a bit
-
-    dut.i_enable.value=1
-    await RisingEdge(dut.i_clock)
+    await _enable_and_wait(dut)
 
     # generate 31 bit ints as data and pc
     program_counter = _generate_ints(0, (1<<31)-1, max_numbers=10 )
@@ -764,18 +657,14 @@ async def test_BRANCH_BLT(dut):
                     await RisingEdge(dut.i_clock)
         
                     should_branch = data1 < data2
-                    target = _to_32_bit(pc + immediate)
+                    target = to_32_bit(pc + immediate)
                     assert dut.o_should_branch.value == should_branch
                     if should_branch:
                         assert dut.o_branch_target.value == target
 
 @cocotb.test()
 async def test_BRANCH_BGE(dut):
-    cocotb.start_soon(Clock(dut.i_clock, 1, units="ns").start())
-    await Timer(5, units="ns")  # wait a bit
-
-    dut.i_enable.value=1
-    await RisingEdge(dut.i_clock)
+    await _enable_and_wait(dut)
 
     # generate 31 bit ints as data and pc
     program_counter = _generate_ints(0, (1<<31)-1, max_numbers=10 )
@@ -797,18 +686,14 @@ async def test_BRANCH_BGE(dut):
                     await RisingEdge(dut.i_clock)
         
                     should_branch = data1 >= data2
-                    target = _to_32_bit(pc + immediate)
+                    target = to_32_bit(pc + immediate)
                     assert dut.o_should_branch.value == should_branch
                     if should_branch:
                         assert dut.o_branch_target.value == target
 
 @cocotb.test()
 async def test_BRANCH_BLTU(dut):
-    cocotb.start_soon(Clock(dut.i_clock, 1, units="ns").start())
-    await Timer(5, units="ns")  # wait a bit
-
-    dut.i_enable.value=1
-    await RisingEdge(dut.i_clock)
+    await _enable_and_wait(dut)
 
     # generate 31 bit ints as data and pc
     program_counter = _generate_ints(0, (1<<31)-1, max_numbers=10 )
@@ -829,19 +714,15 @@ async def test_BRANCH_BLTU(dut):
                     await RisingEdge(dut.i_clock)
                     await RisingEdge(dut.i_clock)
         
-                    should_branch = _to_32_bit_unsigned(data1) < _to_32_bit_unsigned(data2)
-                    target = _to_32_bit(pc + immediate)
+                    should_branch = to_32_bit_unsigned(data1) < to_32_bit_unsigned(data2)
+                    target = to_32_bit(pc + immediate)
                     assert dut.o_should_branch.value == should_branch
                     if should_branch:
                         assert dut.o_branch_target.value == target
 
 @cocotb.test()
 async def test_BRANCH_BGEU(dut):
-    cocotb.start_soon(Clock(dut.i_clock, 1, units="ns").start())
-    await Timer(5, units="ns")  # wait a bit
-
-    dut.i_enable.value=1
-    await RisingEdge(dut.i_clock)
+    await _enable_and_wait(dut)
 
     # generate 31 bit ints as data and pc
     program_counter = _generate_ints(0, (1<<31)-1, max_numbers=10 )
@@ -862,8 +743,8 @@ async def test_BRANCH_BGEU(dut):
                     await RisingEdge(dut.i_clock)
                     await RisingEdge(dut.i_clock)
         
-                    should_branch = _to_32_bit_unsigned(data1) >= _to_32_bit_unsigned(data2)
-                    target = _to_32_bit(pc + immediate)
+                    should_branch = to_32_bit_unsigned(data1) >= to_32_bit_unsigned(data2)
+                    target = to_32_bit(pc + immediate)
                     assert dut.o_should_branch.value == should_branch
                     if should_branch:
                         assert dut.o_branch_target.value == target
