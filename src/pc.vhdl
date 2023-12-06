@@ -19,7 +19,6 @@ begin
     process(i_clock)
     begin
         if rising_edge(i_clock) and i_enable = '1' then
-            o_pc <= current_pc;
             case i_op_code is
             when PCU_OP_NOP => -- Do Nothing --
             when PCU_OP_INC =>
@@ -29,8 +28,8 @@ begin
             when PCU_OP_RESET=>
                 current_pc <= (others => '0');
             when others =>
-        end case;
-
+            end case;
+            o_pc <= current_pc;
         end if;
     end process;
 end behavioral;

@@ -35,6 +35,37 @@ async def test_INC_increments_correctly(dut):
         assert dut.o_pc.value == i
         await RisingEdge(dut.i_clock)
 
+@cocotb.test()
+async def test_ASSIGN(dut):
+    await _enable_and_wait(dut)
+
+    integer_strat =integers(min_value=0, max_value=(1<<32)-1)
+    list_strat = lists(integer_strat,min_size=10,max_size=10)
+    assign_values = list_strat.example()
+    dut.i_op_code.value=0b10
+    for value in assign_values:
+        dut.i_data.value = value
+        await RisingEdge(dut.i_clock)
+        await RisingEdge(dut.i_clock)
+        await RisingEdge(dut.i_clock)
+        assert dut.o_pc.value == value
+
+@cocotb.test()
+async def test_RESET(dut):
+    await _enable_and_wait(dut)
+
+    dut.i_op_code.value=0b10 #assign
+    dut.i_data.value = 42
+    await RisingEdge(dut.i_clock)
+    await RisingEdge(dut.i_clock)
+    await RisingEdge(dut.i_clock)
+    assert dut.o_pc.value == 42
+    dut.i_op_code.value=0b11
+    await RisingEdge(dut.i_clock)
+    await RisingEdge(dut.i_clock)
+    await RisingEdge(dut.i_clock)
+    assert dut.o_pc.value == 0
+
 def test_pc():
     proj_path = Path(__file__).resolve().parent
     src_path = proj_path.parent.parent / "src"
