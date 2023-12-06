@@ -55,6 +55,14 @@ package constants is
     constant PCU_OP_ASSIGN: std_logic_vector(1 downto 0):= "10";
     constant PCU_OP_RESET: std_logic_vector(1 downto 0):= "11";
 
+    -- Control Unit
+    constant CU_RESET : std_logic_vector (5 downto 0) := "000000";
+    constant CU_FETCH : std_logic_vector (5 downto 0) := "000001";
+    constant CU_MEMORY : std_logic_vector (5 downto 0) := "000010";
+    constant CU_DECODE : std_logic_vector (5 downto 0) := "000100";
+    constant CU_EXECUTE : std_logic_vector (5 downto 0) := "001000";
+    constant CU_PC : std_logic_vector (5 downto 0) := "010000";
+
 	-- Flags
 	constant F3_BRANCH_BEQ: std_logic_vector(2 downto 0) := "000";
 	constant F3_BRANCH_BNE: std_logic_vector(2 downto 0) := "001";
