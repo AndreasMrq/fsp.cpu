@@ -56,6 +56,7 @@ package constants is
     constant PCU_OP_RESET: std_logic_vector(1 downto 0):= "11";
 
     -- Control Unit
+    constant PIPELINE_LENGTH: integer :=5;
     constant CU_RESET : std_logic_vector (5 downto 0) := "000000";
     constant CU_FETCH : std_logic_vector (5 downto 0) := "000001";
     constant CU_MEMORY : std_logic_vector (5 downto 0) := "000010";
