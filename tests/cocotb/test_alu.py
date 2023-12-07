@@ -44,6 +44,8 @@ async def test_IMM_ADDI(dut):
 
             expected_result = to_32_bit(immediate + dat)
             assert bin(dut.o_data_result.value) == bin(expected_result)
+            assert dut.o_should_branch.value == 0
+            assert dut.o_should_write_result.value == 1
 
 @cocotb.test()
 async def test_IMM_SLTI(dut):
@@ -66,6 +68,8 @@ async def test_IMM_SLTI(dut):
 
             expected_result = 1 if dat<immediate else 0
             assert dut.o_data_result.value == expected_result
+            assert dut.o_should_branch.value == 0
+            assert dut.o_should_write_result.value == 1
 
 @cocotb.test()
 async def test_IMM_SLTIU_positive_immediate(dut):
@@ -88,6 +92,8 @@ async def test_IMM_SLTIU_positive_immediate(dut):
 
             expected_result = 1 if dat<immediate else 0
             assert dut.o_data_result.value == expected_result
+            assert dut.o_should_branch.value == 0
+            assert dut.o_should_write_result.value == 1
 
 @cocotb.test()
 async def test_IMM_SLTIU_negative_immediate(dut):
@@ -111,6 +117,8 @@ async def test_IMM_SLTIU_negative_immediate(dut):
             extended_imm = to_32_bit_unsigned(immediate)
             expected_result = 1 if dat<extended_imm else 0
             assert dut.o_data_result.value == expected_result
+            assert dut.o_should_branch.value == 0
+            assert dut.o_should_write_result.value == 1
 
 @cocotb.test()
 async def test_IMM_XORI(dut):
@@ -135,6 +143,8 @@ async def test_IMM_XORI(dut):
             dat32 = to_32_bit(dat)
             expected_result = extended_imm ^ dat32
             assert dut.o_data_result.value == expected_result
+            assert dut.o_should_branch.value == 0
+            assert dut.o_should_write_result.value == 1
 
 @cocotb.test()
 async def test_IMM_ORI(dut):
@@ -159,6 +169,8 @@ async def test_IMM_ORI(dut):
             dat32 = to_32_bit(dat)
             expected_result = extended_imm | dat32
             assert dut.o_data_result.value == expected_result
+            assert dut.o_should_branch.value == 0
+            assert dut.o_should_write_result.value == 1
 
 @cocotb.test()
 async def test_IMM_ANDI(dut):
@@ -183,6 +195,8 @@ async def test_IMM_ANDI(dut):
             dat32 = to_32_bit(dat)
             expected_result = extended_imm & dat32
             assert dut.o_data_result.value == expected_result
+            assert dut.o_should_branch.value == 0
+            assert dut.o_should_write_result.value == 1
 
 @cocotb.test()
 async def test_IMM_SLLI(dut):
@@ -205,6 +219,8 @@ async def test_IMM_SLLI(dut):
 
             expected_result = to_32_bit(dat << immediate)
             assert dut.o_data_result.value == expected_result
+            assert dut.o_should_branch.value == 0
+            assert dut.o_should_write_result.value == 1
 
 @cocotb.test()
 async def test_IMM_SRLI(dut):
@@ -228,6 +244,8 @@ async def test_IMM_SRLI(dut):
 
             expected_result = to_32_bit(to_32_bit(dat) >> immediate)
             assert dut.o_data_result.value == expected_result
+            assert dut.o_should_branch.value == 0
+            assert dut.o_should_write_result.value == 1
 
 @cocotb.test()
 async def test_IMM_SRAI_for_positive_data(dut):
@@ -251,6 +269,8 @@ async def test_IMM_SRAI_for_positive_data(dut):
 
             expected_result = to_32_bit(dat >> immediate)
             assert dut.o_data_result.value == expected_result
+            assert dut.o_should_branch.value == 0
+            assert dut.o_should_write_result.value == 1
 
 @cocotb.test()
 async def test_IMM_SRAI_for_negative_data(dut):
@@ -274,6 +294,8 @@ async def test_IMM_SRAI_for_negative_data(dut):
 
             expected_result = to_32_bit(dat >> immediate)
             assert dut.o_data_result.value == expected_result
+            assert dut.o_should_branch.value == 0
+            assert dut.o_should_write_result.value == 1
 
 @cocotb.test()
 async def test_LUI(dut):
@@ -290,6 +312,8 @@ async def test_LUI(dut):
         await RisingEdge(dut.i_clock)
 
         assert dut.o_data_result.value == (immediate << 12)
+        assert dut.o_should_branch.value == 0
+        assert dut.o_should_write_result.value == 1
 
 @cocotb.test()
 async def test_AUIPC(dut):
@@ -310,6 +334,8 @@ async def test_AUIPC(dut):
 
             expected_result = to_32_bit((immediate<<12) + dat)
             assert dut.o_data_result.value == expected_result
+            assert dut.o_should_branch.value == 0
+            assert dut.o_should_write_result.value == 1
 
 
 @cocotb.test()
@@ -333,6 +359,8 @@ async def test_REGREG_ADD(dut):
 
             expected_result = to_32_bit(s1+s2)
             assert bin(dut.o_data_result.value) == bin(expected_result)
+            assert dut.o_should_branch.value == 0
+            assert dut.o_should_write_result.value == 1
 
 @cocotb.test()
 async def test_REGREG_SUB(dut):
@@ -355,6 +383,8 @@ async def test_REGREG_SUB(dut):
 
             expected_result = to_32_bit(s1-s2)
             assert bin(dut.o_data_result.value) == bin(expected_result)
+            assert dut.o_should_branch.value == 0
+            assert dut.o_should_write_result.value == 1
             
 @cocotb.test()
 async def test_REGREG_SLT(dut):
@@ -376,6 +406,8 @@ async def test_REGREG_SLT(dut):
 
             expected_result = 1 if s1<s2 else 0
             assert bin(dut.o_data_result.value) == bin(expected_result)
+            assert dut.o_should_branch.value == 0
+            assert dut.o_should_write_result.value == 1
 
 @cocotb.test()
 async def test_REGREG_SLTU(dut):
@@ -397,6 +429,8 @@ async def test_REGREG_SLTU(dut):
 
             expected_result = 1 if s1<s2 else 0
             assert bin(dut.o_data_result.value) == bin(expected_result)
+            assert dut.o_should_branch.value == 0
+            assert dut.o_should_write_result.value == 1
 
 
 @cocotb.test()
@@ -419,6 +453,8 @@ async def test_REGREG_OR(dut):
 
             expected_result = s1 | s2
             assert bin(dut.o_data_result.value) == bin(expected_result)
+            assert dut.o_should_branch.value == 0
+            assert dut.o_should_write_result.value == 1
 
 @cocotb.test()
 async def test_REGREG_AND(dut):
@@ -440,6 +476,8 @@ async def test_REGREG_AND(dut):
 
             expected_result = s1 & s2
             assert bin(dut.o_data_result.value) == bin(expected_result)
+            assert dut.o_should_branch.value == 0
+            assert dut.o_should_write_result.value == 1
 
 
 @cocotb.test()
@@ -462,6 +500,8 @@ async def test_REGREG_XOR(dut):
 
             expected_result = s1 ^ s2
             assert bin(dut.o_data_result.value) == bin(expected_result)
+            assert dut.o_should_branch.value == 0
+            assert dut.o_should_write_result.value == 1
 
 @cocotb.test()
 async def test_REGREG_SLL(dut):
@@ -484,6 +524,8 @@ async def test_REGREG_SLL(dut):
 
             expected_result = to_32_bit(s1<<s2)
             assert dut.o_data_result.value == expected_result
+            assert dut.o_should_branch.value == 0
+            assert dut.o_should_write_result.value == 1
 
 @cocotb.test()
 async def test_REGREG_SRL(dut):
@@ -506,6 +548,8 @@ async def test_REGREG_SRL(dut):
 
             expected_result = to_32_bit((to_32_bit(s1))>>s2)
             assert bin(dut.o_data_result.value) == bin(expected_result)
+            assert dut.o_should_branch.value == 0
+            assert dut.o_should_write_result.value == 1
 
 @cocotb.test()
 async def test_REGREG_SRA(dut):
@@ -528,6 +572,8 @@ async def test_REGREG_SRA(dut):
 
             expected_result = to_32_bit(s1>>s2)
             assert bin(dut.o_data_result.value) == bin(expected_result)
+            assert dut.o_should_branch.value == 0
+            assert dut.o_should_write_result.value == 1
 
 @cocotb.test()
 async def test_JAL(dut):
@@ -548,6 +594,7 @@ async def test_JAL(dut):
 
             assert dut.o_data_result.value == pc + 4
             assert dut.o_should_branch.value == 1
+            assert dut.o_should_write_result.value == 1
             assert dut.o_branch_target.value == to_32_bit(pc+immediate)
 
 @cocotb.test()
@@ -572,6 +619,7 @@ async def test_JALR(dut):
     
                 assert dut.o_data_result.value == pc + 4
                 assert dut.o_should_branch.value == 1
+                assert dut.o_should_write_result.value == 1
                 expected_result = to_32_bit(data+immediate) & 0xFFFFFFFE
                 assert dut.o_branch_target.value == expected_result
 
@@ -601,6 +649,7 @@ async def test_BRANCH_BEQ(dut):
                     should_branch = data1 == data2
                     target = to_32_bit(pc + immediate)
                     assert dut.o_should_branch.value == should_branch
+                    assert dut.o_should_write_result.value == 0
                     if should_branch:
                         assert dut.o_branch_target.value == target
 
@@ -630,6 +679,7 @@ async def test_BRANCH_BNE(dut):
                     should_branch = data1 != data2
                     target = to_32_bit(pc + immediate)
                     assert dut.o_should_branch.value == should_branch
+                    assert dut.o_should_write_result.value == 0
                     if should_branch:
                         assert dut.o_branch_target.value == target
 
@@ -659,6 +709,7 @@ async def test_BRANCH_BLT(dut):
                     should_branch = data1 < data2
                     target = to_32_bit(pc + immediate)
                     assert dut.o_should_branch.value == should_branch
+                    assert dut.o_should_write_result.value == 0
                     if should_branch:
                         assert dut.o_branch_target.value == target
 
@@ -688,6 +739,7 @@ async def test_BRANCH_BGE(dut):
                     should_branch = data1 >= data2
                     target = to_32_bit(pc + immediate)
                     assert dut.o_should_branch.value == should_branch
+                    assert dut.o_should_write_result.value == 0
                     if should_branch:
                         assert dut.o_branch_target.value == target
 
@@ -717,6 +769,7 @@ async def test_BRANCH_BLTU(dut):
                     should_branch = to_32_bit_unsigned(data1) < to_32_bit_unsigned(data2)
                     target = to_32_bit(pc + immediate)
                     assert dut.o_should_branch.value == should_branch
+                    assert dut.o_should_write_result.value == 0
                     if should_branch:
                         assert dut.o_branch_target.value == target
 
@@ -746,6 +799,7 @@ async def test_BRANCH_BGEU(dut):
                     should_branch = to_32_bit_unsigned(data1) >= to_32_bit_unsigned(data2)
                     target = to_32_bit(pc + immediate)
                     assert dut.o_should_branch.value == should_branch
+                    assert dut.o_should_write_result.value == 0
                     if should_branch:
                         assert dut.o_branch_target.value == target
 

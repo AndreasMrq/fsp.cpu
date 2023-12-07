@@ -12,7 +12,6 @@ entity decoder is
            o_selectb : out  std_logic_vector (4 downto 0);
            o_selectdest : out  std_logic_vector (4 downto 0);
            o_data_imm : out  std_logic_vector (31 downto 0);
-           o_write_enable : out  std_logic;
            o_opcode : out  std_logic_vector (6 downto 0);
            o_fun3: out std_logic_vector (2 downto 0);
            o_fun7: out std_logic_vector (6 downto 0)
@@ -39,7 +38,6 @@ begin
                 when OP_LUI | OP_AUIPC => 
                     o_data_imm <= i_data_instruction(31 downto 12) &
                                   ZERO(11 downto 0);
-                    o_write_enable <= '1';
 
                 when OP_JAL => 
                     o_data_imm <= ZERO(31 downto 21) &
@@ -48,12 +46,10 @@ begin
                                   i_data_instruction(20) &
                                   i_data_instruction(30 downto 21) &
                                   ZERO(0);
-                    o_write_enable <= '1';
 
                 when OP_JALR | OP_LOAD => 
                     o_data_imm <= ZERO(31 downto 12) &
                                   i_data_instruction(31 downto 20);
-                    o_write_enable <= '1';
 
                 when OP_BRANCH =>
                     o_data_imm <= ZERO(31 downto 13) &
@@ -62,22 +58,17 @@ begin
                                   i_data_instruction(30 downto 25) &
                                   i_data_instruction(11 downto 8) &
                                   ZERO(0);
-                    o_write_enable <= '0';
 
                 when OP_STORE =>
                     o_data_imm <= ZERO(31 downto 12) &
                                   i_data_instruction(31 downto 25) &
                                   i_data_instruction(11 downto 7);
-                    o_write_enable <= '0';
                 when OP_IMM =>
                     o_data_imm <= ZERO(31 downto 12) &
                                   i_data_instruction(31 downto 20);
-                    o_write_enable <= '1';
-		when OP_FENCE =>
-		    o_write_enable <='1';
+		        when OP_FENCE =>
                 when others =>
                     o_data_imm <= ZERO(31 downto 0);
-                    o_write_enable <= '0';
             end case;
         end if;
     end process;

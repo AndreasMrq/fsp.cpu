@@ -15,8 +15,8 @@ entity alu is
            i_data_immediate : in std_logic_vector(31 downto 0);
            i_program_counter : in std_logic_vector(31 downto 0);
            o_data_result : out std_logic_vector(31 downto 0);
+           o_should_write_result: out std_logic;
            o_should_branch: out std_logic;
-           o_rd_write_enable: out std_logic;
            o_branch_target: out std_logic_vector(31 downto 0)
        );
 end alu;
@@ -252,20 +252,34 @@ begin
             case i_op_code(6 downto 0) is
                 when OP_IMM => 
                     o_data_result <= execute_IMM(i_data_s1, i_data_immediate, i_fun3, i_fun7);
+                    o_should_branch <= '0';
+                    o_should_write_result <= '1';
+
                 when OP_LUI => 
                     o_data_result <= execute_LUI(i_data_immediate);
+                    o_should_branch <= '0';
+                    o_should_write_result <= '1';
+
                 when OP_AUIPC =>
                     o_data_result <= execute_AUIPC(i_program_counter, i_data_immediate);
+                    o_should_branch <= '0';
+                    o_should_write_result <= '1';
+                    
                 when OP_REGREG =>
                     o_data_result <= execute_REGREG(i_data_s1, i_data_s2, i_fun7 & i_fun3);
+                    o_should_branch <= '0';
+                    o_should_write_result <= '1';
+
                 when OP_JAL =>
                     o_branch_target <= execute_JAL(i_program_counter, i_data_immediate(19 downto 0));
                     o_data_result <= std_logic_vector(signed(i_program_counter) + 4);
                     o_should_branch <= '1';
+                    o_should_write_result <= '1';
                 when OP_JALR =>
                     o_branch_target <= execute_JALR(i_data_s1, i_data_immediate(11 downto 0));
                     o_data_result <= std_logic_vector(signed(i_program_counter) + 4);
                     o_should_branch <= '1';
+                    o_should_write_result <= '1';
                 when OP_BRANCH =>
                     execute_BRANCH(
                         i_data_s1,
@@ -276,8 +290,10 @@ begin
                         o_branch_target,
                         o_should_branch
                     );
+                    o_should_write_result <= '0';
                 when others =>
                     o_data_result <= ZERO(31 downto 0);
+                    o_should_write_result <= '0';
             end case;
         end if;
     end process;

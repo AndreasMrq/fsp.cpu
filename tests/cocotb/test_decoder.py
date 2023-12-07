@@ -293,9 +293,12 @@ def test_decoder():
         vhdl_sources=vhdl_sources,
         hdl_toplevel="decoder",
         always=True,
+        build_args=["--std=08"]
     )
 
-    runner.test(hdl_toplevel="decoder", test_module="test_decoder,")
+    runner.test(hdl_toplevel="decoder", 
+                test_module="test_decoder,",
+                test_args=["--std=08"])
 
 if __name__ == "__main__":
     test_decoder()
